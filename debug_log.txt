@@ -1,0 +1,764 @@
+[2025-11-27T09:40:37.351Z] [DEBUG] Checking Client Username Idempotency
+[2025-11-27T09:40:37.352Z] [DEBUG] Desired: amadeus-cd-3
+[2025-11-27T09:40:37.352Z] [DEBUG] Existing: [
+  {
+    "createdTime": "2025-11-27T09:25:59.165Z",
+    "updatedTime": "2025-11-27T09:25:59.165Z",
+    "createdBy": "3kqbnnrh7dg",
+    "changedBy": "3kqbnnrh7dg",
+    "id": "t031wcsgbdm",
+    "contextType": "EVENT_BROKER",
+    "contextId": "srts1iy55cy",
+    "configurationTypeId": "solaceClientUsername",
+    "entityType": "application",
+    "entityId": "620vs3q9ub1",
+    "identifier": "amadeus-cd-3",
+    "resolvedValue": {
+      "password": "<encrypted>",
+      "clientUsername": "amadeus-cd-3"
+    },
+    "value": {
+      "password": "<encrypted>",
+      "clientUsername": "amadeus-cd-3"
+    },
+    "refreshResolvedValue": false,
+    "type": "configuration",
+    "workInProgress": false
+  }
+]
+[2025-11-27T09:40:38.448Z] [DEBUG] Checking Queue Idempotency for amadeus-order-0.queue
+[2025-11-27T09:40:38.449Z] [DEBUG] Desired: {
+  "queueName": "amadeus-order-0.queue",
+  "accessType": "exclusive",
+  "maxMsgSpoolUsage": 1500,
+  "permission": "consume"
+}
+[2025-11-27T09:40:38.449Z] [DEBUG] Existing: [
+  {
+    "createdTime": "2025-11-27T09:26:02.588Z",
+    "updatedTime": "2025-11-27T09:26:02.588Z",
+    "createdBy": "3kqbnnrh7dg",
+    "changedBy": "3kqbnnrh7dg",
+    "id": "v4e87a7hn05",
+    "contextType": "EVENT_BROKER",
+    "contextId": "srts1iy55cy",
+    "configurationTypeId": "solaceQueue",
+    "entityType": "consumer",
+    "entityId": "k8zizfjv35v",
+    "identifier": "amadeus-order-0.queue",
+    "resolvedValue": {
+      "maxTtl": 0,
+      "queueName": "amadeus-order-0.queue",
+      "accessType": "exclusive",
+      "permission": "consume",
+      "respectTtl": true,
+      "maxMsgSpoolUsage": 1500
+    },
+    "value": {
+      "maxTtl": 0,
+      "queueName": "amadeus-order-0.queue",
+      "accessType": "exclusive",
+      "permission": "consume",
+      "respectTtl": true,
+      "maxMsgSpoolUsage": 1500
+    },
+    "refreshResolvedValue": false,
+    "type": "configuration",
+    "workInProgress": false
+  }
+]
+[2025-11-27T09:40:38.899Z] [DEBUG] Checking Queue Idempotency for amadeus-order-1.queue
+[2025-11-27T09:40:38.900Z] [DEBUG] Desired: {
+  "queueName": "amadeus-order-1.queue",
+  "accessType": "exclusive",
+  "maxMsgSpoolUsage": 1500,
+  "permission": "consume"
+}
+[2025-11-27T09:40:38.900Z] [DEBUG] Existing: [
+  {
+    "createdTime": "2025-11-27T09:26:05.425Z",
+    "updatedTime": "2025-11-27T09:26:05.425Z",
+    "createdBy": "3kqbnnrh7dg",
+    "changedBy": "3kqbnnrh7dg",
+    "id": "jfdq51o0aoj",
+    "contextType": "EVENT_BROKER",
+    "contextId": "srts1iy55cy",
+    "configurationTypeId": "solaceQueue",
+    "entityType": "consumer",
+    "entityId": "uwm1oikxl4r",
+    "identifier": "amadeus-order-1.queue",
+    "resolvedValue": {
+      "maxTtl": 0,
+      "queueName": "amadeus-order-1.queue",
+      "accessType": "exclusive",
+      "permission": "consume",
+      "respectTtl": true,
+      "maxMsgSpoolUsage": 1500
+    },
+    "value": {
+      "maxTtl": 0,
+      "queueName": "amadeus-order-1.queue",
+      "accessType": "exclusive",
+      "permission": "consume",
+      "respectTtl": true,
+      "maxMsgSpoolUsage": 1500
+    },
+    "refreshResolvedValue": false,
+    "type": "configuration",
+    "workInProgress": false
+  }
+]
+[2025-11-27T09:40:39.362Z] [DEBUG] Checking Queue Idempotency for amadeus-order-2.queue
+[2025-11-27T09:40:39.363Z] [DEBUG] Desired: {
+  "queueName": "amadeus-order-2.queue",
+  "accessType": "exclusive",
+  "maxMsgSpoolUsage": 1500,
+  "permission": "consume"
+}
+[2025-11-27T09:40:39.363Z] [DEBUG] Existing: [
+  {
+    "createdTime": "2025-11-27T09:26:08.326Z",
+    "updatedTime": "2025-11-27T09:26:08.326Z",
+    "createdBy": "3kqbnnrh7dg",
+    "changedBy": "3kqbnnrh7dg",
+    "id": "3aepizvcrkk",
+    "contextType": "EVENT_BROKER",
+    "contextId": "srts1iy55cy",
+    "configurationTypeId": "solaceQueue",
+    "entityType": "consumer",
+    "entityId": "8fui2q0c83d",
+    "identifier": "amadeus-order-2.queue",
+    "resolvedValue": {
+      "maxTtl": 0,
+      "queueName": "amadeus-order-2.queue",
+      "accessType": "exclusive",
+      "permission": "consume",
+      "respectTtl": true,
+      "maxMsgSpoolUsage": 1500
+    },
+    "value": {
+      "maxTtl": 0,
+      "queueName": "amadeus-order-2.queue",
+      "accessType": "exclusive",
+      "permission": "consume",
+      "respectTtl": true,
+      "maxMsgSpoolUsage": 1500
+    },
+    "refreshResolvedValue": false,
+    "type": "configuration",
+    "workInProgress": false
+  }
+]
+[2025-11-27T14:40:33.997Z] Starting Push to Portal (Design Phase)...
+[2025-11-27T14:40:34.678Z] Updated Schema Version: OrderSchema v1.0.0
+[2025-11-27T14:40:34.991Z] Updated Schema Version: AmadeusSchema v1.0.0
+[2025-11-27T14:40:35.552Z] Updated Event Version: CreateOrder v1.0.0
+[2025-11-27T14:40:36.474Z] Updated Event Version: OrderCreated v1.0.0
+[2025-11-27T14:40:36.474Z] Processing Application: Amadeus Order
+[2025-11-27T14:40:36.474Z] Using App-Specific Broker Context: tgo-sandbox (srts1iy55cy)
+[2025-11-27T14:40:36.832Z] Constructed 3 consumers for Amadeus Order v1.0.0
+[2025-11-27T14:40:36.832Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtl":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"f9h560q6rtj","eventMeshIds":[]}]}]}
+[2025-11-27T14:40:36.832Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "0oesqzu9533",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "f9h560q6rtj"
+  ],
+  "declaredProducedEventVersionIds": [
+    "4189o2h6ew6"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace",
+    "clientUsername": "amadeus-cd-4"
+  }
+}
+[2025-11-27T14:40:36.956Z] Warning: Stale App Version ID 086jgpcbi1p for Amadeus Order v1.0.0. Resetting...
+[2025-11-27T14:40:37.247Z] Created App Version: Amadeus Order v1.0.0
+[2025-11-27T14:40:37.247Z] Configuring Client Username for Amadeus Order...
+[2025-11-27T14:40:37.385Z] Check Client Username result: found 1 configs
+[2025-11-27T14:40:37.386Z] Client Username for Amadeus Order is up to date. Skipping creation.
+[2025-11-27T14:40:38.017Z] Creating consumer amadeus-order-0.queue...
+[2025-11-27T14:40:38.326Z] Created consumer amadeus-order-0.queue
+[2025-11-27T14:40:38.326Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-27T14:40:38.463Z] Check Queue Config result for amadeus-order-0.queue: found 0 configs
+[2025-11-27T14:40:38.463Z] Creating new queue config for amadeus-order-0.queue...
+[2025-11-27T14:40:38.684Z] Configured queue amadeus-order-0.queue
+[2025-11-27T14:40:38.684Z] Creating consumer amadeus-order-1.queue...
+[2025-11-27T14:40:39.033Z] Created consumer amadeus-order-1.queue
+[2025-11-27T14:40:39.034Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-27T14:40:39.172Z] Check Queue Config result for amadeus-order-1.queue: found 0 configs
+[2025-11-27T14:40:39.173Z] Creating new queue config for amadeus-order-1.queue...
+[2025-11-27T14:40:39.334Z] Configured queue amadeus-order-1.queue
+[2025-11-27T14:40:39.335Z] Creating consumer amadeus-order-2.queue...
+[2025-11-27T14:40:39.550Z] Created consumer amadeus-order-2.queue
+[2025-11-27T14:40:39.550Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-27T14:40:39.693Z] Check Queue Config result for amadeus-order-2.queue: found 0 configs
+[2025-11-27T14:40:39.693Z] Creating new queue config for amadeus-order-2.queue...
+[2025-11-27T14:40:39.858Z] Configured queue amadeus-order-2.queue
+[2025-11-27T14:40:39.859Z] Processing Application: Amadeus Romain
+[2025-11-27T14:40:39.859Z] Warning: No brokerName specified for app 'Amadeus Romain'. Configuration (Queues/Client Username) will be skipped.
+[2025-11-27T14:40:40.199Z] Constructed 0 consumers for Amadeus Romain v1.0.0
+[2025-11-27T14:40:40.199Z] Sending payload for Amadeus Romain v1.0.0: {
+  "applicationId": "4nzknizny3t",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "f9h560q6rtj"
+  ],
+  "declaredProducedEventVersionIds": [
+    "4189o2h6ew6"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-27T14:40:40.329Z] Warning: Stale App Version ID 9c3zdpsg3a4 for Amadeus Romain v1.0.0. Resetting...
+[2025-11-27T14:40:40.542Z] Created App Version: Amadeus Romain v1.0.0
+[2025-11-27T15:11:23.556Z] Starting Push to Portal (Design Phase)...
+[2025-11-27T15:11:24.234Z] Updated Schema Version: OrderSchema v1.0.0
+[2025-11-27T15:11:24.581Z] Updated Schema Version: AmadeusSchema v1.0.0
+[2025-11-27T15:11:25.161Z] Updated Event Version: CreateOrder v1.0.0
+[2025-11-27T15:11:25.724Z] Updated Event Version: OrderCreated v1.0.0
+[2025-11-27T15:11:25.724Z] Processing Application: Amadeus Order
+[2025-11-27T15:11:25.725Z] Using App-Specific Broker Context: tgo-sandbox (srts1iy55cy)
+[2025-11-27T15:11:26.090Z] Constructed 3 consumers for Amadeus Order v1.0.0
+[2025-11-27T15:11:26.091Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtl":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"f9h560q6rtj","eventMeshIds":[]}]}]}
+[2025-11-27T15:11:26.091Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "0oesqzu9533",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "f9h560q6rtj"
+  ],
+  "declaredProducedEventVersionIds": [
+    "4189o2h6ew6"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace",
+    "clientUsername": "amadeus-cd-4"
+  }
+}
+[2025-11-27T15:11:26.225Z] Warning: Stale App Version ID 086jgpcbi1p for Amadeus Order v1.0.0. Resetting...
+[2025-11-27T15:11:26.391Z] Reconciled: Linked existing App Version Amadeus Order v1.0.0 (imn72lb729r)
+[2025-11-27T15:11:26.636Z] Configuring Client Username for Amadeus Order...
+[2025-11-27T15:11:26.780Z] Check Client Username result: found 1 configs
+[2025-11-27T15:11:26.781Z] Client Username for Amadeus Order is up to date. Skipping creation.
+[2025-11-27T15:11:27.401Z] Updating consumer amadeus-order-0.queue...
+[2025-11-27T15:11:27.610Z] Updated consumer amadeus-order-0.queue
+[2025-11-27T15:11:27.611Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-27T15:11:27.755Z] Check Queue Config result for amadeus-order-0.queue: found 1 configs
+[2025-11-27T15:11:27.756Z] Queue config for amadeus-order-0.queue is up to date. Skipping creation.
+[2025-11-27T15:11:27.756Z] Updating consumer amadeus-order-1.queue...
+[2025-11-27T15:11:28.061Z] Updated consumer amadeus-order-1.queue
+[2025-11-27T15:11:28.062Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-27T15:11:28.203Z] Check Queue Config result for amadeus-order-1.queue: found 1 configs
+[2025-11-27T15:11:28.204Z] Queue config for amadeus-order-1.queue is up to date. Skipping creation.
+[2025-11-27T15:11:28.207Z] Updating consumer amadeus-order-2.queue...
+[2025-11-27T15:11:28.413Z] Updated consumer amadeus-order-2.queue
+[2025-11-27T15:11:28.414Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-27T15:11:28.552Z] Check Queue Config result for amadeus-order-2.queue: found 1 configs
+[2025-11-27T15:11:28.553Z] Queue config for amadeus-order-2.queue is up to date. Skipping creation.
+[2025-11-27T15:11:28.553Z] Processing Application: Amadeus Romain
+[2025-11-27T15:11:28.554Z] Warning: No brokerName specified for app 'Amadeus Romain'. Configuration (Queues/Client Username) will be skipped.
+[2025-11-27T15:11:28.888Z] Constructed 0 consumers for Amadeus Romain v1.0.0
+[2025-11-27T15:11:28.889Z] Sending payload for Amadeus Romain v1.0.0: {
+  "applicationId": "4nzknizny3t",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "f9h560q6rtj"
+  ],
+  "declaredProducedEventVersionIds": [
+    "4189o2h6ew6"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-27T15:11:29.021Z] Warning: Stale App Version ID 9c3zdpsg3a4 for Amadeus Romain v1.0.0. Resetting...
+[2025-11-27T15:11:29.152Z] Reconciled: Linked existing App Version Amadeus Romain v1.0.0 (wb8b1y781zu)
+[2025-11-27T15:11:29.424Z] Updated local configuration
+[2025-11-27T15:22:26.932Z] Starting Push to Portal (Design Phase)...
+[2025-11-27T15:22:27.295Z] Warning: Stale Domain ID u8ylxof36li for TGO Amadeus. Resetting...
+[2025-11-27T15:22:27.295Z] Processing Application Domain: TGO Amadeus
+[2025-11-27T15:22:27.438Z] Created Application Domain: vnezp18gk6x
+[2025-11-27T15:22:27.439Z] Warning: Stale Domain ID jul3ohfm95q for RCA Amadeus. Resetting...
+[2025-11-27T15:22:27.439Z] Processing Application Domain: RCA Amadeus
+[2025-11-27T15:22:27.577Z] Created Application Domain: 833o1589nk9
+[2025-11-27T15:22:27.579Z] Updated local configuration
+[2025-11-27T15:22:27.734Z] Warning: Stale Schema ID 0yqc9rdi6hx for OrderSchema. Resetting...
+[2025-11-27T15:22:28.051Z] Created Schema Object: bx3hgdc8tnh
+[2025-11-27T15:22:28.182Z] Warning: Stale Schema Version ID vylqhs1we4h for OrderSchema v1.0.0. Resetting...
+[2025-11-27T15:22:28.529Z] Created Schema Version: OrderSchema v1.0.0 (State: 1)
+[2025-11-27T15:22:28.695Z] Warning: Stale Schema ID gwp0euh2lgw for AmadeusSchema. Resetting...
+[2025-11-27T15:22:29.031Z] Created Schema Object: i9abuwk2x2i
+[2025-11-27T15:22:29.165Z] Warning: Stale Schema Version ID r830esbtbce for AmadeusSchema v1.0.0. Resetting...
+[2025-11-27T15:22:29.484Z] Created Schema Version: AmadeusSchema v1.0.0 (State: 1)
+[2025-11-27T15:22:29.485Z] Updated local configuration
+[2025-11-27T15:22:29.830Z] Warning: Stale Event ID 6qsjjw3emzi for CreateOrder. Resetting...
+[2025-11-27T15:22:30.394Z] Created Event Object: yeh7fhbss5k
+[2025-11-27T15:22:30.523Z] Warning: Stale Event Version ID f9h560q6rtj for CreateOrder v1.0.0. Resetting...
+[2025-11-27T15:22:31.095Z] Created Event Version: CreateOrder v1.0.0 (State: 1)
+[2025-11-27T15:22:31.434Z] Warning: Stale Event ID yo4dv3h3qn7 for OrderCreated. Resetting...
+[2025-11-27T15:22:31.979Z] Created Event Object: 4k6gxytom84
+[2025-11-27T15:22:32.114Z] Warning: Stale Event Version ID 4189o2h6ew6 for OrderCreated v1.0.0. Resetting...
+[2025-11-27T15:22:32.570Z] Created Event Version: OrderCreated v1.0.0 (State: 1)
+[2025-11-27T15:22:32.572Z] Updated local configuration
+[2025-11-27T15:22:32.573Z] Processing Application: Amadeus Order
+[2025-11-27T15:22:32.574Z] Using App-Specific Broker Context: tgo-sandbox (srts1iy55cy)
+[2025-11-27T15:22:32.913Z] Warning: Stale App ID 0oesqzu9533 for Amadeus Order. Resetting...
+[2025-11-27T15:22:33.442Z] Created App Object: epcel7vy1w7
+[2025-11-27T15:22:33.444Z] Constructed 3 consumers for Amadeus Order v1.0.0
+[2025-11-27T15:22:33.445Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtl":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"g07zvnnhsda","eventMeshIds":[]}]}]}
+[2025-11-27T15:22:33.446Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "epcel7vy1w7",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "g07zvnnhsda"
+  ],
+  "declaredProducedEventVersionIds": [
+    "7x6znbsz156"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace",
+    "clientUsername": "amadeus-cd-4"
+  }
+}
+[2025-11-27T15:22:33.575Z] Warning: Stale App Version ID imn72lb729r for Amadeus Order v1.0.0. Resetting...
+[2025-11-27T15:22:33.928Z] Created App Version: Amadeus Order v1.0.0
+[2025-11-27T15:22:33.928Z] Configuring Client Username for Amadeus Order...
+[2025-11-27T15:22:34.061Z] Check Client Username result: found 0 configs
+[2025-11-27T15:22:34.066Z] Creating new Client Username config for Amadeus Order...
+[2025-11-27T15:22:34.240Z] Configured Client Username for Amadeus Order
+[2025-11-27T15:22:34.853Z] Creating consumer amadeus-order-0.queue...
+[2025-11-27T15:22:35.076Z] Created consumer amadeus-order-0.queue
+[2025-11-27T15:22:35.077Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-27T15:22:35.220Z] Check Queue Config result for amadeus-order-0.queue: found 0 configs
+[2025-11-27T15:22:35.220Z] Creating new queue config for amadeus-order-0.queue...
+[2025-11-27T15:22:35.437Z] Configured queue amadeus-order-0.queue
+[2025-11-27T15:22:35.438Z] Creating consumer amadeus-order-1.queue...
+[2025-11-27T15:22:35.792Z] Created consumer amadeus-order-1.queue
+[2025-11-27T15:22:35.793Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-27T15:22:35.933Z] Check Queue Config result for amadeus-order-1.queue: found 0 configs
+[2025-11-27T15:22:35.933Z] Creating new queue config for amadeus-order-1.queue...
+[2025-11-27T15:22:36.152Z] Configured queue amadeus-order-1.queue
+[2025-11-27T15:22:36.152Z] Creating consumer amadeus-order-2.queue...
+[2025-11-27T15:22:36.503Z] Created consumer amadeus-order-2.queue
+[2025-11-27T15:22:36.503Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-27T15:22:36.646Z] Check Queue Config result for amadeus-order-2.queue: found 0 configs
+[2025-11-27T15:22:36.647Z] Creating new queue config for amadeus-order-2.queue...
+[2025-11-27T15:22:36.824Z] Configured queue amadeus-order-2.queue
+[2025-11-27T15:22:36.828Z] Processing Application: Amadeus Romain
+[2025-11-27T15:22:36.828Z] Warning: No brokerName specified for app 'Amadeus Romain'. Configuration (Queues/Client Username) will be skipped.
+[2025-11-27T15:22:37.182Z] Warning: Stale App ID 4nzknizny3t for Amadeus Romain. Resetting...
+[2025-11-27T15:22:37.686Z] Created App Object: aoctkbsf0fd
+[2025-11-27T15:22:37.687Z] Constructed 0 consumers for Amadeus Romain v1.0.0
+[2025-11-27T15:22:37.687Z] Sending payload for Amadeus Romain v1.0.0: {
+  "applicationId": "aoctkbsf0fd",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "g07zvnnhsda"
+  ],
+  "declaredProducedEventVersionIds": [
+    "7x6znbsz156"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-27T15:22:37.823Z] Warning: Stale App Version ID wb8b1y781zu for Amadeus Romain v1.0.0. Resetting...
+[2025-11-27T15:22:38.228Z] Created App Version: Amadeus Romain v1.0.0
+[2025-11-27T15:22:38.229Z] Updated local configuration
+[2025-11-27T15:27:03.224Z] Starting Push to Portal (Design Phase)...
+[2025-11-27T15:27:03.604Z] Warning: Stale Domain ID vnezp18gk6x for TGO Amadeus. Resetting...
+[2025-11-27T15:27:03.604Z] Processing Application Domain: TGO Amadeus
+[2025-11-27T15:27:03.743Z] Created Application Domain: m2o2nhocrid
+[2025-11-27T15:27:03.744Z] Warning: Stale Domain ID 833o1589nk9 for RCA Amadeus. Resetting...
+[2025-11-27T15:27:03.745Z] Processing Application Domain: RCA Amadeus
+[2025-11-27T15:27:03.896Z] Created Application Domain: qb92054h0cc
+[2025-11-27T15:27:03.899Z] Updated local configuration
+[2025-11-27T15:27:04.051Z] Warning: Stale Schema ID bx3hgdc8tnh for OrderSchema. Resetting...
+[2025-11-27T15:27:04.390Z] Created Schema Object: 1p1247am2mz
+[2025-11-27T15:27:04.525Z] Warning: Stale Schema Version ID eu6f5p3prtm for OrderSchema v1.0.0. Resetting...
+[2025-11-27T15:27:04.841Z] Created Schema Version: OrderSchema v1.0.0 (State: 1)
+[2025-11-27T15:27:05.003Z] Warning: Stale Schema ID i9abuwk2x2i for AmadeusSchema. Resetting...
+[2025-11-27T15:27:05.344Z] Created Schema Object: gmxosljhxwk
+[2025-11-27T15:27:05.471Z] Warning: Stale Schema Version ID 0ee6vqqx2xv for AmadeusSchema v1.0.0. Resetting...
+[2025-11-27T15:27:05.822Z] Created Schema Version: AmadeusSchema v1.0.0 (State: 1)
+[2025-11-27T15:27:05.824Z] Updated local configuration
+[2025-11-27T15:27:06.162Z] Warning: Stale Event ID yeh7fhbss5k for CreateOrder. Resetting...
+[2025-11-27T15:27:06.691Z] Created Event Object: zuml0vm2w69
+[2025-11-27T15:27:06.824Z] Warning: Stale Event Version ID g07zvnnhsda for CreateOrder v1.0.0. Resetting...
+[2025-11-27T15:27:07.375Z] Created Event Version: CreateOrder v1.0.0 (State: 1)
+[2025-11-27T15:27:07.733Z] Warning: Stale Event ID 4k6gxytom84 for OrderCreated. Resetting...
+[2025-11-27T15:27:08.251Z] Created Event Object: f847xk4xgc2
+[2025-11-27T15:27:08.380Z] Warning: Stale Event Version ID 7x6znbsz156 for OrderCreated v1.0.0. Resetting...
+[2025-11-27T15:27:08.850Z] Created Event Version: OrderCreated v1.0.0 (State: 1)
+[2025-11-27T15:27:08.852Z] Updated local configuration
+[2025-11-27T15:27:08.853Z] Processing Application: Amadeus Order
+[2025-11-27T15:27:08.855Z] Using App-Specific Broker Context: tgo-sandbox (srts1iy55cy)
+[2025-11-27T15:27:09.205Z] Warning: Stale App ID epcel7vy1w7 for Amadeus Order. Resetting...
+[2025-11-27T15:27:09.723Z] Created App Object: 4l1mzuh8e1x
+[2025-11-27T15:27:09.726Z] Constructed 3 consumers for Amadeus Order v1.0.0
+[2025-11-27T15:27:09.727Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtlEnabled":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"2twmcfo39j9","eventMeshIds":[]}]}]}
+[2025-11-27T15:27:09.727Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "4l1mzuh8e1x",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2twmcfo39j9"
+  ],
+  "declaredProducedEventVersionIds": [
+    "djefr3ejcpl"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace",
+    "clientUsername": "amadeus-cd-4"
+  }
+}
+[2025-11-27T15:27:09.854Z] Warning: Stale App Version ID g6dif43v3bi for Amadeus Order v1.0.0. Resetting...
+[2025-11-27T15:27:10.202Z] Created App Version: Amadeus Order v1.0.0
+[2025-11-27T15:27:10.202Z] Configuring Client Username for Amadeus Order...
+[2025-11-27T15:27:10.338Z] Check Client Username result: found 0 configs
+[2025-11-27T15:27:10.339Z] Creating new Client Username config for Amadeus Order...
+[2025-11-27T15:27:10.513Z] Configured Client Username for Amadeus Order
+[2025-11-27T15:27:11.191Z] Creating consumer amadeus-order-0.queue...
+[2025-11-27T15:27:11.498Z] Created consumer amadeus-order-0.queue
+[2025-11-27T15:27:11.498Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-27T15:27:11.637Z] Check Queue Config result for amadeus-order-0.queue: found 0 configs
+[2025-11-27T15:27:11.638Z] Creating new queue config for amadeus-order-0.queue...
+[2025-11-27T15:27:11.873Z] Configured queue amadeus-order-0.queue
+[2025-11-27T15:27:11.873Z] Creating consumer amadeus-order-1.queue...
+[2025-11-27T15:27:12.103Z] Created consumer amadeus-order-1.queue
+[2025-11-27T15:27:12.103Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-27T15:27:12.247Z] Check Queue Config result for amadeus-order-1.queue: found 0 configs
+[2025-11-27T15:27:12.252Z] Creating new queue config for amadeus-order-1.queue...
+[2025-11-27T15:27:12.419Z] Configured queue amadeus-order-1.queue
+[2025-11-27T15:27:12.420Z] Creating consumer amadeus-order-2.queue...
+[2025-11-27T15:27:12.650Z] Created consumer amadeus-order-2.queue
+[2025-11-27T15:27:12.650Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-27T15:27:12.788Z] Check Queue Config result for amadeus-order-2.queue: found 0 configs
+[2025-11-27T15:27:12.789Z] Creating new queue config for amadeus-order-2.queue...
+[2025-11-27T15:27:12.957Z] Configured queue amadeus-order-2.queue
+[2025-11-27T15:27:12.957Z] Processing Application: Amadeus Romain
+[2025-11-27T15:27:12.957Z] Warning: No brokerName specified for app 'Amadeus Romain'. Configuration (Queues/Client Username) will be skipped.
+[2025-11-27T15:27:13.323Z] Warning: Stale App ID aoctkbsf0fd for Amadeus Romain. Resetting...
+[2025-11-27T15:27:13.863Z] Created App Object: tdy1ga9qs59
+[2025-11-27T15:27:13.864Z] Constructed 0 consumers for Amadeus Romain v1.0.0
+[2025-11-27T15:27:13.864Z] Sending payload for Amadeus Romain v1.0.0: {
+  "applicationId": "tdy1ga9qs59",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2twmcfo39j9"
+  ],
+  "declaredProducedEventVersionIds": [
+    "djefr3ejcpl"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-27T15:27:13.990Z] Warning: Stale App Version ID qx0bc8ckgj1 for Amadeus Romain v1.0.0. Resetting...
+[2025-11-27T15:27:14.402Z] Created App Version: Amadeus Romain v1.0.0
+[2025-11-27T15:27:14.403Z] Updated local configuration
+[2025-11-27T15:41:16.746Z] Starting Push to Portal (Design Phase)...
+[2025-11-27T15:41:17.878Z] Updated Schema Version: OrderSchema v1.0.0
+[2025-11-27T15:41:18.510Z] Updated Schema Version: AmadeusSchema v1.0.0
+[2025-11-27T15:41:19.220Z] Updated Event Version: CreateOrder v1.0.0
+[2025-11-27T15:41:19.816Z] Updated Event Version: OrderCreated v1.0.0
+[2025-11-27T15:41:19.817Z] Processing Application: Amadeus Order
+[2025-11-27T15:41:19.817Z] Using App-Specific Broker Context: tgo-sandbox (srts1iy55cy)
+[2025-11-27T15:41:20.154Z] Constructed 4 consumers for Amadeus Order v1.0.0
+[2025-11-27T15:41:20.155Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtlEnabled":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"2twmcfo39j9","eventMeshIds":[]}]}]}
+[2025-11-27T15:41:20.155Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "4l1mzuh8e1x",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2twmcfo39j9"
+  ],
+  "declaredProducedEventVersionIds": [
+    "djefr3ejcpl"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace",
+    "clientUsername": "amadeus-cd-4"
+  }
+}
+[2025-11-27T15:41:20.384Z] Updated App Version: Amadeus Order v1.0.0
+[2025-11-27T15:41:20.386Z] Configuring Client Username for Amadeus Order...
+[2025-11-27T15:41:20.531Z] Check Client Username result: found 1 configs
+[2025-11-27T15:41:20.532Z] Client Username for Amadeus Order is up to date. Skipping creation.
+[2025-11-27T15:41:21.168Z] Updating consumer amadeus-order-0.queue...
+[2025-11-27T15:41:21.486Z] Updated consumer amadeus-order-0.queue
+[2025-11-27T15:41:21.487Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-27T15:41:21.622Z] Check Queue Config result for amadeus-order-0.queue: found 1 configs
+[2025-11-27T15:41:21.623Z] Queue config for amadeus-order-0.queue is up to date. Skipping creation.
+[2025-11-27T15:41:21.624Z] Updating consumer amadeus-order-1.queue...
+[2025-11-27T15:41:21.837Z] Updated consumer amadeus-order-1.queue
+[2025-11-27T15:41:21.838Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-27T15:41:21.979Z] Check Queue Config result for amadeus-order-1.queue: found 1 configs
+[2025-11-27T15:41:21.980Z] Queue config for amadeus-order-1.queue is up to date. Skipping creation.
+[2025-11-27T15:41:21.980Z] Updating consumer amadeus-order-2.queue...
+[2025-11-27T15:41:22.296Z] Updated consumer amadeus-order-2.queue
+[2025-11-27T15:41:22.297Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-27T15:41:22.436Z] Check Queue Config result for amadeus-order-2.queue: found 1 configs
+[2025-11-27T15:41:22.437Z] Queue config for amadeus-order-2.queue is up to date. Skipping creation.
+[2025-11-27T15:41:22.437Z] Creating consumer amadeus-order-3.queue...
+[2025-11-27T15:41:22.796Z] Created consumer amadeus-order-3.queue
+[2025-11-27T15:41:22.797Z] Configuring queue for amadeus-order-3.queue...
+[2025-11-27T15:41:22.937Z] Check Queue Config result for amadeus-order-3.queue: found 0 configs
+[2025-11-27T15:41:22.937Z] Creating new queue config for amadeus-order-3.queue...
+[2025-11-27T15:41:23.164Z] Configured queue amadeus-order-3.queue
+[2025-11-27T15:41:23.166Z] Processing Application: Amadeus Romain
+[2025-11-27T15:41:23.166Z] Warning: No brokerName specified for app 'Amadeus Romain'. Configuration (Queues/Client Username) will be skipped.
+[2025-11-27T15:41:23.519Z] Constructed 0 consumers for Amadeus Romain v1.0.0
+[2025-11-27T15:41:23.519Z] Sending payload for Amadeus Romain v1.0.0: {
+  "applicationId": "tdy1ga9qs59",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2twmcfo39j9"
+  ],
+  "declaredProducedEventVersionIds": [
+    "djefr3ejcpl"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-27T15:41:23.721Z] Updated App Version: Amadeus Romain v1.0.0
+[2025-11-27T16:11:48.546Z] Starting Push to Portal (Design Phase)...
+[2025-11-27T16:11:49.616Z] Updated Schema Version: OrderSchema v1.0.0
+[2025-11-27T16:11:50.183Z] Updated Schema Version: AmadeusSchema v1.0.0
+[2025-11-27T16:11:50.790Z] Updated Event Version: CreateOrder v1.0.0
+[2025-11-27T16:11:51.366Z] Updated Event Version: OrderCreated v1.0.0
+[2025-11-27T16:11:51.367Z] Processing Application: Amadeus Order
+[2025-11-27T16:11:51.368Z] Using App-Specific Broker Context: tgo-sandbox (srts1iy55cy)
+[2025-11-27T16:11:51.716Z] Constructed 4 consumers for Amadeus Order v1.0.0
+[2025-11-27T16:11:51.718Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtlEnabled":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"2twmcfo39j9","eventMeshIds":[]}]}]}
+[2025-11-27T16:11:51.719Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "4l1mzuh8e1x",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2twmcfo39j9"
+  ],
+  "declaredProducedEventVersionIds": [
+    "djefr3ejcpl"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace",
+    "clientUsername": "amadeus-cd-4"
+  }
+}
+[2025-11-27T16:11:52.044Z] Updated App Version: Amadeus Order v1.0.0
+[2025-11-27T16:11:52.044Z] Configuring Client Username for Amadeus Order...
+[2025-11-27T16:11:52.198Z] Check Client Username result: found 1 configs
+[2025-11-27T16:11:52.199Z] Client Username for Amadeus Order is up to date. Skipping creation.
+[2025-11-27T16:11:52.811Z] Updating consumer amadeus-order-0.queue...
+[2025-11-27T16:11:53.028Z] Updated consumer amadeus-order-0.queue
+[2025-11-27T16:11:53.028Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-27T16:11:53.176Z] Check Queue Config result for amadeus-order-0.queue: found 1 configs
+[2025-11-27T16:11:53.184Z] Queue config for amadeus-order-0.queue is up to date. Skipping creation.
+[2025-11-27T16:11:53.184Z] Updating consumer amadeus-order-1.queue...
+[2025-11-27T16:11:53.398Z] Updated consumer amadeus-order-1.queue
+[2025-11-27T16:11:53.398Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-27T16:11:53.566Z] Check Queue Config result for amadeus-order-1.queue: found 1 configs
+[2025-11-27T16:11:53.566Z] Queue config for amadeus-order-1.queue is up to date. Skipping creation.
+[2025-11-27T16:11:53.566Z] Updating consumer amadeus-order-2.queue...
+[2025-11-27T16:11:53.772Z] Updated consumer amadeus-order-2.queue
+[2025-11-27T16:11:53.772Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-27T16:11:53.913Z] Check Queue Config result for amadeus-order-2.queue: found 1 configs
+[2025-11-27T16:11:53.913Z] Queue config for amadeus-order-2.queue is up to date. Skipping creation.
+[2025-11-27T16:11:53.914Z] Updating consumer amadeus-order-3.queue...
+[2025-11-27T16:11:54.126Z] Updated consumer amadeus-order-3.queue
+[2025-11-27T16:11:54.127Z] Configuring queue for amadeus-order-3.queue...
+[2025-11-27T16:11:54.276Z] Check Queue Config result for amadeus-order-3.queue: found 1 configs
+[2025-11-27T16:11:54.277Z] Queue config for amadeus-order-3.queue is up to date. Skipping creation.
+[2025-11-27T16:11:54.281Z] Processing Application: Amadeus Romain
+[2025-11-27T16:11:54.281Z] Warning: No brokerName specified for app 'Amadeus Romain'. Configuration (Queues/Client Username) will be skipped.
+[2025-11-27T16:11:54.631Z] Constructed 0 consumers for Amadeus Romain v1.0.0
+[2025-11-27T16:11:54.631Z] Sending payload for Amadeus Romain v1.0.0: {
+  "applicationId": "tdy1ga9qs59",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2twmcfo39j9"
+  ],
+  "declaredProducedEventVersionIds": [
+    "djefr3ejcpl"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-27T16:11:54.842Z] Updated App Version: Amadeus Romain v1.0.0
+[2025-11-28T10:06:25.452Z] Starting Push to Portal (Design Phase)...
+[2025-11-28T10:06:26.668Z] Updated Schema Version: OrderSchema v1.0.0
+[2025-11-28T10:06:27.685Z] Updated Event Version: CreateOrder v1.0.0
+[2025-11-28T10:06:28.268Z] Updated Event Version: OrderCreated v1.0.0
+[2025-11-28T10:06:28.269Z] Processing Application: Amadeus Order
+[2025-11-28T10:06:28.269Z] Warning: No brokerName specified for app 'Amadeus Order'. Configuration (Queues/Client Username) will be skipped.
+[2025-11-28T10:06:28.629Z] Constructed 5 consumers for Amadeus Order v1.0.0
+[2025-11-28T10:06:28.629Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtlEnabled":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"2twmcfo39j9","eventMeshIds":[]}]}]}
+[2025-11-28T10:06:28.630Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "4l1mzuh8e1x",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2twmcfo39j9"
+  ],
+  "declaredProducedEventVersionIds": [
+    "djefr3ejcpl"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-28T10:06:28.867Z] Updated App Version: Amadeus Order v1.0.0
+[2025-11-28T10:06:29.538Z] Updating consumer amadeus-order-0.queue...
+[2025-11-28T10:06:29.857Z] Updated consumer amadeus-order-0.queue
+[2025-11-28T10:06:29.858Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-28T10:06:29.859Z] Warning: Failed to configure queue amadeus-order-0.queue: No Broker Context available
+[2025-11-28T10:06:29.859Z] Updating consumer amadeus-order-1.queue...
+[2025-11-28T10:06:30.189Z] Updated consumer amadeus-order-1.queue
+[2025-11-28T10:06:30.190Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-28T10:06:30.190Z] Warning: Failed to configure queue amadeus-order-1.queue: No Broker Context available
+[2025-11-28T10:06:30.191Z] Updating consumer amadeus-order-2.queue...
+[2025-11-28T10:06:30.504Z] Updated consumer amadeus-order-2.queue
+[2025-11-28T10:06:30.504Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-28T10:06:30.505Z] Warning: Failed to configure queue amadeus-order-2.queue: No Broker Context available
+[2025-11-28T10:06:30.505Z] Updating consumer amadeus-order-3.queue...
+[2025-11-28T10:06:30.813Z] Updated consumer amadeus-order-3.queue
+[2025-11-28T10:06:30.814Z] Configuring queue for amadeus-order-3.queue...
+[2025-11-28T10:06:30.815Z] Warning: Failed to configure queue amadeus-order-3.queue: No Broker Context available
+[2025-11-28T10:06:30.816Z] Creating consumer amadeus-order-4.queue...
+[2025-11-28T10:06:31.048Z] Created consumer amadeus-order-4.queue
+[2025-11-28T10:06:31.048Z] Configuring queue for amadeus-order-4.queue...
+[2025-11-28T10:06:31.048Z] Warning: Failed to configure queue amadeus-order-4.queue: No Broker Context available
+[2025-11-28T10:07:56.966Z] Starting Push to Portal (Design Phase)...
+[2025-11-28T10:07:58.034Z] Updated Schema Version: OrderSchema v1.0.0
+[2025-11-28T10:07:59.024Z] Updated Event Version: CreateOrder v1.0.0
+[2025-11-28T10:07:59.646Z] Updated Event Version: OrderCreated v1.0.0
+[2025-11-28T10:07:59.647Z] Processing Application: Amadeus Order
+[2025-11-28T10:07:59.648Z] Using App-Specific Broker Context: tgo-sandbox (srts1iy55cy)
+[2025-11-28T10:08:00.014Z] Constructed 5 consumers for Amadeus Order v1.0.0
+[2025-11-28T10:08:00.014Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtlEnabled":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"2twmcfo39j9","eventMeshIds":[]}]}]}
+[2025-11-28T10:08:00.014Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "4l1mzuh8e1x",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2twmcfo39j9"
+  ],
+  "declaredProducedEventVersionIds": [
+    "djefr3ejcpl"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-28T10:08:00.338Z] Updated App Version: Amadeus Order v1.0.0
+[2025-11-28T10:08:00.996Z] Updating consumer amadeus-order-0.queue...
+[2025-11-28T10:08:01.321Z] Updated consumer amadeus-order-0.queue
+[2025-11-28T10:08:01.322Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-28T10:08:01.470Z] Check Queue Config result for amadeus-order-0.queue: found 1 configs
+[2025-11-28T10:08:01.471Z] Queue config for amadeus-order-0.queue is up to date. Skipping creation.
+[2025-11-28T10:08:01.471Z] Updating consumer amadeus-order-1.queue...
+[2025-11-28T10:08:01.687Z] Updated consumer amadeus-order-1.queue
+[2025-11-28T10:08:01.687Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-28T10:08:01.833Z] Check Queue Config result for amadeus-order-1.queue: found 1 configs
+[2025-11-28T10:08:01.833Z] Queue config for amadeus-order-1.queue is up to date. Skipping creation.
+[2025-11-28T10:08:01.834Z] Updating consumer amadeus-order-2.queue...
+[2025-11-28T10:08:02.159Z] Updated consumer amadeus-order-2.queue
+[2025-11-28T10:08:02.160Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-28T10:08:02.306Z] Check Queue Config result for amadeus-order-2.queue: found 1 configs
+[2025-11-28T10:08:02.307Z] Queue config for amadeus-order-2.queue is up to date. Skipping creation.
+[2025-11-28T10:08:02.308Z] Updating consumer amadeus-order-3.queue...
+[2025-11-28T10:08:02.538Z] Updated consumer amadeus-order-3.queue
+[2025-11-28T10:08:02.539Z] Configuring queue for amadeus-order-3.queue...
+[2025-11-28T10:08:02.688Z] Check Queue Config result for amadeus-order-3.queue: found 1 configs
+[2025-11-28T10:08:02.689Z] Queue config for amadeus-order-3.queue is up to date. Skipping creation.
+[2025-11-28T10:08:02.689Z] Updating consumer amadeus-order-4.queue...
+[2025-11-28T10:08:02.904Z] Updated consumer amadeus-order-4.queue
+[2025-11-28T10:08:02.905Z] Configuring queue for amadeus-order-4.queue...
+[2025-11-28T10:08:03.051Z] Check Queue Config result for amadeus-order-4.queue: found 0 configs
+[2025-11-28T10:08:03.051Z] Creating new queue config for amadeus-order-4.queue...
+[2025-11-28T10:08:03.283Z] Configured queue amadeus-order-4.queue
+[2025-11-28T10:11:17.454Z] Starting Push to Portal (Design Phase)...
+[2025-11-28T10:11:17.824Z] Warning: Stale Domain ID m2o2nhocrid for TGO Amadeus. Resetting...
+[2025-11-28T10:11:17.825Z] Processing Application Domain: TGO Amadeus
+[2025-11-28T10:11:17.975Z] Created Application Domain: r9of86yzkb9
+[2025-11-28T10:11:17.976Z] Updated local configuration
+[2025-11-28T10:11:18.327Z] Warning: Stale Schema ID 1p1247am2mz for OrderSchema. Resetting...
+[2025-11-28T10:11:18.658Z] Created Schema Object: 9ylmkwo0fq5
+[2025-11-28T10:11:18.793Z] Warning: Stale Schema Version ID 4ns6i37yonz for OrderSchema v1.0.0. Resetting...
+[2025-11-28T10:11:19.149Z] Created Schema Version: OrderSchema v1.0.0 (State: 1)
+[2025-11-28T10:11:19.151Z] Updated local configuration
+[2025-11-28T10:11:19.486Z] Warning: Stale Event ID zuml0vm2w69 for CreateOrder. Resetting...
+[2025-11-28T10:11:19.990Z] Created Event Object: c73i0yqba9b
+[2025-11-28T10:11:20.117Z] Warning: Stale Event Version ID 2twmcfo39j9 for CreateOrder v1.0.0. Resetting...
+[2025-11-28T10:11:20.586Z] Created Event Version: CreateOrder v1.0.0 (State: 1)
+[2025-11-28T10:11:20.945Z] Warning: Stale Event ID f847xk4xgc2 for OrderCreated. Resetting...
+[2025-11-28T10:11:21.449Z] Created Event Object: e7de2ixq4ox
+[2025-11-28T10:11:21.580Z] Warning: Stale Event Version ID djefr3ejcpl for OrderCreated v1.0.0. Resetting...
+[2025-11-28T10:11:22.047Z] Created Event Version: OrderCreated v1.0.0 (State: 1)
+[2025-11-28T10:11:22.049Z] Updated local configuration
+[2025-11-28T10:11:22.050Z] Processing Application: Amadeus Order
+[2025-11-28T10:11:22.050Z] Using App-Specific Broker Context: tgo-sandbox (srts1iy55cy)
+[2025-11-28T10:11:22.376Z] Warning: Stale App ID 4l1mzuh8e1x for Amadeus Order. Resetting...
+[2025-11-28T10:11:22.879Z] Created App Object: zrilszzwdb7
+[2025-11-28T10:11:22.880Z] Constructed 5 consumers for Amadeus Order v1.0.0
+[2025-11-28T10:11:22.881Z] Consumer 0: {"name":"amadeus-order-0.queue","consumerType":"eventQueue","brokerType":"solace","queueConfig":{"accessType":"exclusive","maxMsgSpoolUsage":1500,"maxTtl":0,"respectTtlEnabled":true,"permission":"consume"},"subscriptions":[{"subscriptionType":"topic","value":"amadeus/order/create/*","attractedEventVersionIds":[{"eventVersionId":"2fwsibayo3x","eventMeshIds":[]}]}]}
+[2025-11-28T10:11:22.882Z] Sending payload for Amadeus Order v1.0.0: {
+  "applicationId": "zrilszzwdb7",
+  "version": "1.0.0",
+  "stateId": "1",
+  "declaredConsumedEventVersionIds": [
+    "2fwsibayo3x"
+  ],
+  "declaredProducedEventVersionIds": [
+    "9rd60i11or9"
+  ],
+  "messagingSettings": {
+    "brokerType": "solace"
+  }
+}
+[2025-11-28T10:11:23.015Z] Warning: Stale App Version ID 5moh8gu94ua for Amadeus Order v1.0.0. Resetting...
+[2025-11-28T10:11:23.367Z] Created App Version: Amadeus Order v1.0.0
+[2025-11-28T10:11:24.006Z] Creating consumer amadeus-order-0.queue...
+[2025-11-28T10:11:24.207Z] Created consumer amadeus-order-0.queue
+[2025-11-28T10:11:24.209Z] Configuring queue for amadeus-order-0.queue...
+[2025-11-28T10:11:24.343Z] Check Queue Config result for amadeus-order-0.queue: found 0 configs
+[2025-11-28T10:11:24.343Z] Creating new queue config for amadeus-order-0.queue...
+[2025-11-28T10:11:24.561Z] Configured queue amadeus-order-0.queue
+[2025-11-28T10:11:24.561Z] Creating consumer amadeus-order-1.queue...
+[2025-11-28T10:11:24.789Z] Created consumer amadeus-order-1.queue
+[2025-11-28T10:11:24.790Z] Configuring queue for amadeus-order-1.queue...
+[2025-11-28T10:11:24.930Z] Check Queue Config result for amadeus-order-1.queue: found 0 configs
+[2025-11-28T10:11:24.931Z] Creating new queue config for amadeus-order-1.queue...
+[2025-11-28T10:11:25.152Z] Configured queue amadeus-order-1.queue
+[2025-11-28T10:11:25.153Z] Creating consumer amadeus-order-2.queue...
+[2025-11-28T10:11:25.389Z] Created consumer amadeus-order-2.queue
+[2025-11-28T10:11:25.389Z] Configuring queue for amadeus-order-2.queue...
+[2025-11-28T10:11:25.532Z] Check Queue Config result for amadeus-order-2.queue: found 0 configs
+[2025-11-28T10:11:25.532Z] Creating new queue config for amadeus-order-2.queue...
+[2025-11-28T10:11:25.757Z] Configured queue amadeus-order-2.queue
+[2025-11-28T10:11:25.758Z] Creating consumer amadeus-order-3.queue...
+[2025-11-28T10:11:26.169Z] Created consumer amadeus-order-3.queue
+[2025-11-28T10:11:26.169Z] Configuring queue for amadeus-order-3.queue...
+[2025-11-28T10:11:26.318Z] Check Queue Config result for amadeus-order-3.queue: found 0 configs
+[2025-11-28T10:11:26.319Z] Creating new queue config for amadeus-order-3.queue...
+[2025-11-28T10:11:26.543Z] Configured queue amadeus-order-3.queue
+[2025-11-28T10:11:26.544Z] Creating consumer amadeus-order-4.queue...
+[2025-11-28T10:11:26.783Z] Created consumer amadeus-order-4.queue
+[2025-11-28T10:11:26.784Z] Configuring queue for amadeus-order-4.queue...
+[2025-11-28T10:11:26.926Z] Check Queue Config result for amadeus-order-4.queue: found 0 configs
+[2025-11-28T10:11:26.927Z] Creating new queue config for amadeus-order-4.queue...
+[2025-11-28T10:11:27.098Z] Configured queue amadeus-order-4.queue
+[2025-11-28T10:11:27.100Z] Updated local configuration
