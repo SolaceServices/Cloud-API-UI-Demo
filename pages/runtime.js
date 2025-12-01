@@ -66,9 +66,18 @@ export default function Runtime() {
     };
 
     const fetchConfig = async () => {
-        const res = await fetch(`/api/config?t=${Date.now()}`);
-        const data = await res.json();
-        setConfig(data);
+        try {
+            const res = await fetch(`/api/config?t=${Date.now()}`);
+            const data = await res.json();
+            setConfig({
+                applications: data.applications || [],
+                applicationDomains: data.applicationDomains || [],
+                ...data
+            });
+        } catch (err) {
+            console.error('Failed to fetch config:', err);
+            setConfig({ applications: [], applicationDomains: [] });
+        }
     };
 
     const handleDeploy = async () => {

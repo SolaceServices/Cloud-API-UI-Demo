@@ -28,7 +28,18 @@ export default function Designer() {
         fetch('/api/config')
             .then(res => res.json())
             .then(data => {
-                setConfig(data);
+                setConfig({
+                    applicationDomains: data.applicationDomains || [],
+                    applications: data.applications || [],
+                    events: data.events || [],
+                    schemas: data.schemas || [],
+                    ...data
+                });
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Failed to fetch config:', err);
+                setConfig({ applicationDomains: [], applications: [], events: [], schemas: [] });
                 setLoading(false);
             });
     };
