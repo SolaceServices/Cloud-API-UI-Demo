@@ -35,6 +35,7 @@ export default function Designer() {
     const [brokers, setBrokers] = useState([]);
     const [activeView, setActiveView] = useState('design'); // 'design' or 'configurations'
     const [activeBrokerConfig, setActiveBrokerConfig] = useState(0); // Index of selected broker config
+    const [selectedVersionIndex, setSelectedVersionIndex] = useState(0); // Index of selected version for configuration
     const [activeConfigTab, setActiveConfigTab] = useState('eventHandling'); // 'eventHandling' or 'accessControl'
 
     useEffect(() => {
@@ -475,32 +476,33 @@ export default function Designer() {
         setSelectedItem(app);
     };
 
-    const updateQueueConfig = (versionIndex, consumerIndex, field, value) => {
+    const updateQueueConfig = (consumerIndex, field, value) => {
         const newConfig = { ...config };
         const itemIndex = newConfig.applications.findIndex(i => i.id === selectedItem.id);
         const app = newConfig.applications[itemIndex];
-        const version = app.versions[versionIndex];
+        const version = app.versions[selectedVersionIndex];
         const consumer = version.consumers[consumerIndex];
-        const brokerName = app.brokerConfigs[activeBrokerConfig]?.brokerName;
 
-        if (!brokerName) return alert('Please select a broker first');
+        const activeConfig = app.brokerConfigs[activeBrokerConfig];
+        const brokerName = activeConfig?.brokerName;
+        const configKey = activeConfig?.brokerContextId || brokerName;
+
+        if (!configKey) return alert('Please select a broker first');
 
         if (!consumer.queueConfigs) consumer.queueConfigs = {};
-        if (!consumer.queueConfigs[brokerName]) {
-            // Initialize with defaults or existing legacy config
-            consumer.queueConfigs[brokerName] = {
-                ...(consumer.queueConfig || {
-                    accessType: "exclusive",
-                    maxMsgSpoolUsage: 1500,
-                    permission: "consume",
-                    respectTtlEnabled: true
-                })
+        if (!consumer.queueConfigs[configKey]) {
+            // Initialize with defaults
+            consumer.queueConfigs[configKey] = {
+                accessType: "exclusive",
+                maxMsgSpoolUsage: 1500,
+                permission: "consume",
+                respectTtlEnabled: true
             };
         }
 
-        consumer.queueConfigs[brokerName][field] = value;
-        saveConfig(newConfig);
-        setSelectedItem(app);
+        consumer.queueConfigs[configKey][field] = value;
+        saveConfig(newConfig); // Persist
+        // No need to setSelectedItem since we are operating on 'config' state derived views
     };
 
     if (loading) return <Layout><div>Loading...</div></Layout>;
@@ -706,221 +708,123 @@ export default function Designer() {
                         )}
 
                         {activeView === 'configurations' && activeTab === 'apps' ? (
-                            <div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem' }}>Configure for Event Brokers</h3>
-
-                                {/* Broker Cards List */}
-                                <div style={{ marginBottom: '2rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                        <label style={{ display: 'block' }}>Event brokers with configurations created</label>
-                                        <button className="btn btn-sm btn-secondary" onClick={addBrokerConfig}><Plus size={14} style={{ marginRight: '0.25rem' }} /> Add Configuration</button>
-                                    </div>
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                                        {(selectedItem.brokerConfigs || []).map((bc, idx) => (
-                                            <div
-                                                key={idx}
-                                                onClick={() => setActiveBrokerConfig(idx)}
-                                                style={{
-                                                    padding: '1rem',
-                                                    border: activeBrokerConfig === idx ? '2px solid var(--primary)' : '1px solid #333',
-                                                    borderRadius: 'var(--radius)',
-                                                    backgroundColor: activeBrokerConfig === idx ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.2)',
-                                                    cursor: 'pointer',
-                                                    position: 'relative'
-                                                }}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                                    <Layers size={16} />
-                                                    <span style={{ fontWeight: 'bold' }}>{bc.brokerName || 'Select Broker'}</span>
-                                                </div>
-                                                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
-                                                    {bc.accessType === 'basic' ? 'Basic Auth' : 'Reference'}
-                                                </div>
-                                                <button
-                                                    onClick={(e) => removeBrokerConfig(idx, e)}
-                                                    style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
-                                                >
-                                                    <XCircle size={16} />
-                                                </button>
-                                            </div>
+                            <div style={{ padding: '0 1rem' }}>
+                                {/* Version Selector */}
+                                <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Select Version to Configure</label>
+                                    <select
+                                        className="input"
+                                        style={{ width: '100%', fontSize: '1rem', padding: '0.5rem' }}
+                                        value={selectedVersionIndex}
+                                        onChange={e => {
+                                            setSelectedVersionIndex(parseInt(e.target.value));
+                                            setActiveBrokerConfig(0); // Reset broker selection
+                                        }}
+                                    >
+                                        {selectedItem.versions.map((v, i) => (
+                                            <option key={v.id} value={i}>v{v.version} ({STATES[v.stateId].label})</option>
                                         ))}
-                                        {(!selectedItem.brokerConfigs || selectedItem.brokerConfigs.length === 0) && (
-                                            <div style={{ padding: '1rem', border: '1px dashed #333', borderRadius: 'var(--radius)', color: 'var(--muted-foreground)', textAlign: 'center' }}>
-                                                No configurations yet.
-                                            </div>
-                                        )}
-                                    </div>
+                                    </select>
                                 </div>
 
-                                {selectedItem.brokerConfigs && selectedItem.brokerConfigs[activeBrokerConfig] && (
-                                    <>
-                                        <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid #333', display: 'flex', gap: '1rem' }}>
-                                            <button
-                                                onClick={() => setActiveConfigTab('eventHandling')}
-                                                style={{
-                                                    padding: '0.5rem 0',
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    borderBottom: activeConfigTab === 'eventHandling' ? '2px solid var(--primary)' : '2px solid transparent',
-                                                    color: activeConfigTab === 'eventHandling' ? 'var(--primary)' : 'var(--muted-foreground)',
-                                                    fontWeight: 'bold',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                Define Event Handling
-                                            </button>
-                                            <button
-                                                onClick={() => setActiveConfigTab('accessControl')}
-                                                style={{
-                                                    padding: '0.5rem 0',
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    borderBottom: activeConfigTab === 'accessControl' ? '2px solid var(--primary)' : '2px solid transparent',
-                                                    color: activeConfigTab === 'accessControl' ? 'var(--primary)' : 'var(--muted-foreground)',
-                                                    fontWeight: 'bold',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                Define Access Control
-                                            </button>
+                                {/* Configurations Table */}
+                                <div>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>Consumer Configurations</h3>
+
+                                    {(!selectedItem.brokerConfigs || selectedItem.brokerConfigs.length === 0) && (
+                                        <div style={{ padding: '1rem', color: '#f59e0b', border: '1px solid #f59e0b', borderRadius: 'var(--radius)', marginBottom: '1rem' }}>
+                                            <AlertCircle size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                                            No brokers defined. Go to Design Details and add a broker configuration first.
                                         </div>
+                                    )}
 
-                                        {activeConfigTab === 'accessControl' && (
-                                            <div style={{ marginBottom: '2rem' }}>
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Target Broker</label>
-                                                    <select
-                                                        className="input"
-                                                        value={selectedItem.brokerConfigs[activeBrokerConfig].brokerName || ''}
-                                                        onChange={(e) => updateBrokerConfig('brokerName', e.target.value)}
+                                    {selectedItem.brokerConfigs && selectedItem.brokerConfigs.length > 0 && (
+                                        <div>
+                                            {/* Broker Tabs */}
+                                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                                                {selectedItem.brokerConfigs.map((bc, bIdx) => (
+                                                    <button
+                                                        key={bIdx}
+                                                        onClick={() => setActiveBrokerConfig(bIdx)}
+                                                        style={{
+                                                            padding: '0.5rem 1rem',
+                                                            background: activeBrokerConfig === bIdx ? 'var(--primary)' : 'transparent',
+                                                            color: activeBrokerConfig === bIdx ? '#fff' : 'var(--muted-foreground)',
+                                                            border: 'none',
+                                                            borderRadius: '4px 4px 0 0',
+                                                            cursor: 'pointer'
+                                                        }}
                                                     >
-                                                        <option value="">Select a Broker...</option>
-                                                        {brokers.map(b => (
-                                                            <option key={b.id} value={b.name}>{b.name} ({b.serviceId || b.id})</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Access Type <span style={{ color: 'red' }}>*</span></label>
-                                                    <select
-                                                        className="input"
-                                                        value={selectedItem.brokerConfigs[activeBrokerConfig].accessType || 'reference'}
-                                                        onChange={(e) => updateBrokerConfig('accessType', e.target.value)}
-                                                    >
-                                                        <option value="reference">Reference Existing Client Username</option>
-                                                        <option value="basic">Basic (Create/Update Client Username & Password)</option>
-                                                    </select>
-                                                </div>
-
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Client Username <span style={{ color: 'red' }}>*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        className="input"
-                                                        value={selectedItem.brokerConfigs[activeBrokerConfig].clientUsername || ''}
-                                                        onChange={(e) => updateBrokerConfig('clientUsername', e.target.value)}
-                                                        placeholder="e.g., my-client-username"
-                                                    />
-                                                </div>
-
-                                                {selectedItem.brokerConfigs[activeBrokerConfig].accessType === 'basic' && (
-                                                    <div>
-                                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password <span style={{ color: 'red' }}>*</span></label>
-                                                        <input
-                                                            type="password"
-                                                            className="input"
-                                                            value={selectedItem.brokerConfigs[activeBrokerConfig].clientPassword || ''}
-                                                            onChange={(e) => updateBrokerConfig('clientPassword', e.target.value)}
-                                                            placeholder="Enter password"
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {activeConfigTab === 'eventHandling' && (
-                                            <div>
-                                                {selectedItem.versions.map((v, vIdx) => (
-                                                    <div key={v.id} style={{ marginBottom: '2rem' }}>
-                                                        <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Version {v.version}</h4>
-                                                        {v.consumers && v.consumers.length > 0 ? v.consumers.map((c, cIdx) => {
-                                                            const brokerName = selectedItem.brokerConfigs[activeBrokerConfig].brokerName;
-                                                            // Resolve queue config: specific -> legacy -> default
-                                                            const qConfig = (c.queueConfigs && c.queueConfigs[brokerName]) || c.queueConfig || {
-                                                                accessType: "exclusive",
-                                                                maxMsgSpoolUsage: 1500,
-                                                                permission: "consume",
-                                                                respectTtlEnabled: true
-                                                            };
-
-                                                            return (
-                                                                <div key={cIdx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius)' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                                                        <Layers size={16} />
-                                                                        <span style={{ fontWeight: 'bold' }}>{c.name}</span>
-                                                                        <span style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>({c.type})</span>
-                                                                    </div>
-
-                                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                                                        <div>
-                                                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Access Type</label>
-                                                                            <select
-                                                                                className="input"
-                                                                                style={{ fontSize: '0.875rem', padding: '0.4rem' }}
-                                                                                value={qConfig.accessType}
-                                                                                onChange={(e) => updateQueueConfig(vIdx, cIdx, 'accessType', e.target.value)}
-                                                                            >
-                                                                                <option value="exclusive">Exclusive</option>
-                                                                                <option value="non-exclusive">Non-Exclusive</option>
-                                                                            </select>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Max Spool (MB)</label>
-                                                                            <input
-                                                                                type="number"
-                                                                                className="input"
-                                                                                style={{ fontSize: '0.875rem', padding: '0.4rem' }}
-                                                                                value={qConfig.maxMsgSpoolUsage}
-                                                                                onChange={(e) => updateQueueConfig(vIdx, cIdx, 'maxMsgSpoolUsage', parseInt(e.target.value))}
-                                                                            />
-                                                                        </div>
-                                                                        <div>
-                                                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Permission</label>
-                                                                            <select
-                                                                                className="input"
-                                                                                style={{ fontSize: '0.875rem', padding: '0.4rem' }}
-                                                                                value={qConfig.permission}
-                                                                                onChange={(e) => updateQueueConfig(vIdx, cIdx, 'permission', e.target.value)}
-                                                                            >
-                                                                                <option value="consume">Consume</option>
-                                                                                <option value="read-only">Read Only</option>
-                                                                                <option value="no-access">No Access</option>
-                                                                            </select>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Max TTL (sec)</label>
-                                                                            <input
-                                                                                type="number"
-                                                                                className="input"
-                                                                                style={{ fontSize: '0.875rem', padding: '0.4rem' }}
-                                                                                value={qConfig.maxTtl || 0}
-                                                                                onChange={(e) => updateQueueConfig(vIdx, cIdx, 'maxTtl', parseInt(e.target.value))}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }) : (
-                                                            <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>No consumers defined for this version.</div>
-                                                        )}
-                                                    </div>
+                                                        {bc.brokerName || `Broker ${bIdx + 1}`}
+                                                    </button>
                                                 ))}
                                             </div>
-                                        )}
-                                    </>
-                                )}
+
+                                            {/* Configs for Active Broker */}
+                                            {selectedItem.versions[selectedVersionIndex]?.consumers?.map((consumer, cIdx) => {
+                                                const activeConfig = selectedItem.brokerConfigs[activeBrokerConfig];
+                                                // Use ID if available, valid fallback to Name for legacy/imported
+                                                const configKey = activeConfig?.brokerContextId || activeConfig?.brokerName;
+                                                const currentConfig = (consumer.queueConfigs && consumer.queueConfigs[configKey]) || {
+                                                    accessType: 'exclusive',
+                                                    maxMsgSpoolUsage: 1500,
+                                                    permission: 'consume'
+                                                };
+
+                                                return (
+                                                    <div key={cIdx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius)' }}>
+                                                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <Layers size={16} /> {consumer.name}
+                                                            <span style={{ fontSize: '0.75rem', opacity: 0.7, fontWeight: 'normal' }}>({consumer.type})</span>
+                                                        </div>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                                                            <div>
+                                                                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Access Type</label>
+                                                                <select
+                                                                    className="input"
+                                                                    style={{ fontSize: '0.85rem', padding: '0.3rem' }}
+                                                                    value={currentConfig.accessType}
+                                                                    onChange={e => updateQueueConfig(cIdx, 'accessType', e.target.value)}
+                                                                >
+                                                                    <option value="exclusive">Exclusive</option>
+                                                                    <option value="non-exclusive">Non-Exclusive</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Max Spool (MB)</label>
+                                                                <input
+                                                                    type="number"
+                                                                    className="input"
+                                                                    style={{ fontSize: '0.85rem', padding: '0.3rem' }}
+                                                                    value={currentConfig.maxMsgSpoolUsage}
+                                                                    onChange={e => updateQueueConfig(cIdx, 'maxMsgSpoolUsage', parseInt(e.target.value))}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Permission</label>
+                                                                <select
+                                                                    className="input"
+                                                                    style={{ fontSize: '0.85rem', padding: '0.3rem' }}
+                                                                    value={currentConfig.permission}
+                                                                    onChange={e => updateQueueConfig(cIdx, 'permission', e.target.value)}
+                                                                >
+                                                                    <option value="consume">Consume</option>
+                                                                    <option value="read-only">Read Only</option>
+                                                                    <option value="no-access">No Access</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {(!selectedItem.versions[selectedVersionIndex]?.consumers || selectedItem.versions[selectedVersionIndex].consumers.length === 0) && (
+                                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                                                    No consumers defined in this version.
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             // Design View (Existing Logic)
@@ -1025,7 +929,8 @@ export default function Designer() {
                                     ))}
                                 </div>
                             </div>
-                        )}
+                        )
+                        }
                     </div >
                 )}
             </div >
@@ -1308,11 +1213,7 @@ export default function Designer() {
                             const newConsumer = {
                                 name: `${selectedItem.name.toLowerCase().replace(/\s+/g, '-')}-${formData.consumers?.length || 0}.queue`,
                                 type: 'eventQueue',
-                                queueConfig: {
-                                    accessType: 'exclusive',
-                                    maxMsgSpoolUsage: 1500,
-                                    permission: 'consume'
-                                },
+                                queueConfigs: {},
                                 subscriptions: []
                             };
                             setFormData({
@@ -1353,33 +1254,14 @@ export default function Designer() {
                                     }} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Access Type</label>
-                                    <select className="input" value={consumer.queueConfig?.accessType || 'exclusive'} onChange={e => {
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Type</label>
+                                    <select className="input" value={consumer.type} onChange={e => {
                                         const newConsumers = [...formData.consumers];
-                                        newConsumers[cIdx].queueConfig.accessType = e.target.value;
+                                        newConsumers[cIdx].type = e.target.value;
                                         setFormData({ ...formData, consumers: newConsumers });
                                     }}>
-                                        <option value="exclusive">Exclusive</option>
-                                        <option value="non-exclusive">Non-Exclusive</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Max Spool Usage (MB)</label>
-                                    <input type="number" className="input" value={consumer.queueConfig?.maxMsgSpoolUsage || 1500} onChange={e => {
-                                        const newConsumers = [...formData.consumers];
-                                        newConsumers[cIdx].queueConfig.maxMsgSpoolUsage = parseInt(e.target.value);
-                                        setFormData({ ...formData, consumers: newConsumers });
-                                    }} />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Permission</label>
-                                    <select className="input" value={consumer.queueConfig?.permission || 'consume'} onChange={e => {
-                                        const newConsumers = [...formData.consumers];
-                                        newConsumers[cIdx].queueConfig.permission = e.target.value;
-                                        setFormData({ ...formData, consumers: newConsumers });
-                                    }}>
-                                        <option value="consume">Consume</option>
-                                        <option value="read-only">Read Only</option>
+                                        <option value="eventQueue">Event Queue</option>
+                                        <option value="topicEndpoint">Topic Endpoint</option>
                                     </select>
                                 </div>
                             </div>
@@ -1390,37 +1272,16 @@ export default function Designer() {
                                     <label style={{ fontSize: '0.875rem', fontWeight: 'bold' }}>Subscriptions</label>
                                     <button className="btn btn-sm btn-secondary" style={{ padding: '0.1rem 0.5rem', fontSize: '0.75rem' }} onClick={() => {
                                         const newConsumers = [...formData.consumers];
-                                        newConsumers[cIdx].subscriptions.push({ subscriptionType: 'topic', value: '' });
+                                        if (!newConsumers[cIdx].subscriptions) newConsumers[cIdx].subscriptions = [];
+                                        newConsumers[cIdx].subscriptions.push({ value: '', type: 'topic' });
                                         setFormData({ ...formData, consumers: newConsumers });
                                     }}>
-                                        <Plus size={12} /> Add
+                                        <Plus size={12} /> Add Sub
                                     </button>
                                 </div>
 
                                 {consumer.subscriptions?.map((sub, sIdx) => (
                                     <div key={sIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <select className="input" style={{ width: '150px' }} value={sub.attractedEventVersionId || ''} onChange={e => {
-                                            const newConsumers = [...formData.consumers];
-                                            const eventId = e.target.value;
-                                            newConsumers[cIdx].subscriptions[sIdx].attractedEventVersionId = eventId;
-
-                                            // Auto-fill topic if event selected
-                                            if (eventId) {
-                                                const event = config.events.find(ev => ev.versions.some(v => v.id === eventId));
-                                                const version = event?.versions.find(v => v.id === eventId);
-                                                if (version?.topic) {
-                                                    newConsumers[cIdx].subscriptions[sIdx].value = version.topic.replace(/\{[^}]+\}/g, '*');
-                                                }
-                                            }
-                                            setFormData({ ...formData, consumers: newConsumers });
-                                        }}>
-                                            <option value="">Custom Topic</option>
-                                            {config.events.map(event =>
-                                                event.versions.map(v => (
-                                                    <option key={v.id} value={v.id}>{event.name} v{v.version}</option>
-                                                ))
-                                            )}
-                                        </select>
                                         <input type="text" className="input" value={sub.value} onChange={e => {
                                             const newConsumers = [...formData.consumers];
                                             newConsumers[cIdx].subscriptions[sIdx].value = e.target.value;
@@ -1452,21 +1313,24 @@ export default function Designer() {
                 ) : (
                     syncReport && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            {Object.entries(syncReport).map(([type, items]) => (
-                                <div key={type}>
-                                    <h4 style={{ textTransform: 'capitalize', marginBottom: '0.5rem', borderBottom: '1px solid #333' }}>{type}</h4>
-                                    {items.length === 0 ? <p style={{ color: '#666' }}>No items</p> : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                            {items.map(item => (
-                                                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
-                                                    <span>{item.name}</span>
-                                                    {renderSyncStatus(item.status)}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                            {Object.entries(syncReport).map(([type, items]) => {
+                                if (!Array.isArray(items)) return null;
+                                return (
+                                    <div key={type}>
+                                        <h4 style={{ textTransform: 'capitalize', marginBottom: '0.5rem', borderBottom: '1px solid #333' }}>{type}</h4>
+                                        {items.length === 0 ? <p style={{ color: '#666' }}>No items</p> : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                {items.map(item => (
+                                                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
+                                                        <span>{item.name}</span>
+                                                        {renderSyncStatus(item.status)}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )
                 )}

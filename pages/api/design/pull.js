@@ -39,6 +39,9 @@ export default async function handler(req, res) {
         const log = (msg) => {
             console.log(msg);
             logs.push({ timestamp: new Date().toISOString(), message: msg });
+            try {
+                fs.appendFileSync(path.join(process.cwd(), 'pull_debug.log'), `[${new Date().toISOString()}] ${msg}\n`);
+            } catch (e) { /* ignore */ }
         };
 
         log(`Starting Pull for Domain ID: ${domainId}...`);
@@ -47,10 +50,13 @@ export default async function handler(req, res) {
         let contextMap = {};
         try {
             log('Fetching Broker Contexts...');
-            let brokersRes = await solaceApiCall('GET', ENDPOINTS.MODELED_EVENT_BROKERS, null, token);
+            // CRITICAL FIX: Use solaceApiCallAll to handle pagination (default page size might be 20)
+            let brokersRes = await solaceApiCallAll(ENDPOINTS.MODELED_EVENT_BROKERS, token);
+
+            // Fallback not typically needed with All, but if primary fails with empty data:
             if (!brokersRes.data || brokersRes.data.length === 0) {
                 log('Primary endpoint returned no data, trying fallback...');
-                brokersRes = await solaceApiCall('GET', ENDPOINTS.MODELED_EVENT_BROKERS_FALLBACK, null, token);
+                brokersRes = await solaceApiCallAll(ENDPOINTS.MODELED_EVENT_BROKERS_FALLBACK, token);
             }
             if (brokersRes.data) {
                 brokersRes.data.forEach(b => {
@@ -214,25 +220,28 @@ export default async function handler(req, res) {
                 if (clientUserConfigsRes.data && clientUserConfigsRes.data.length > 0) {
                     clientUserConfigsRes.data.forEach(uEntry => {
                         const configVal = uEntry.value;
-                        const ctxId = uEntry.appContextId || uEntry.applicationContextId;
-                        const brokerName = contextMap[ctxId] || ctxId || "Imported Broker";
 
-                        log(`Client Config Context ID: ${ctxId} (Resolved: ${brokerName}). Keys: ${Object.keys(uEntry).join(', ')}`);
+
 
                         if (configVal && configVal.clientUsername) {
                             localApp.clientUsername = configVal.clientUsername; // Fallback
                             log(`Imported Client Username: ${configVal.clientUsername} for Broker: ${brokerName}`);
 
-                            const existingConfig = localApp.brokerConfigs.find(bc => bc.brokerName === brokerName);
+                            const existingConfig = localApp.brokerConfigs.find(bc => bc.brokerName === brokerName || (ctxId && bc.brokerContextId === ctxId));
                             // Check if configVal has accessType or we can infer it
                             const importedAccessType = configVal.accessType || "reference";
 
                             if (existingConfig) {
                                 existingConfig.clientUsername = configVal.clientUsername;
                                 existingConfig.accessType = importedAccessType;
+                                if (ctxId) existingConfig.brokerContextId = ctxId;
+                                if (brokerName !== "Imported Broker" && existingConfig.brokerName === "Imported Broker") {
+                                    existingConfig.brokerName = brokerName;
+                                }
                             } else {
                                 localApp.brokerConfigs.push({
                                     brokerName: brokerName,
+                                    brokerContextId: ctxId,
                                     clientUsername: configVal.clientUsername,
                                     clientPassword: "",
                                     accessType: importedAccessType
@@ -300,12 +309,8 @@ export default async function handler(req, res) {
                             if (queueConfigsRes.data && queueConfigsRes.data.length > 0) {
                                 queueConfigsRes.data.forEach(qEntry => {
                                     const qVal = qEntry.value;
-                                    // CHECK PROPERTY NAME here. It might be 'applicationContextId' or 'eventBrokerContextId' or similar.
-                                    // Based on standard Solace API, it's often 'appContextId' in some objects, but let's log keys to be sure.
-                                    const ctxId = qEntry.appContextId || qEntry.applicationContextId || qEntry.eventMeshId;
-                                    const brokerName = contextMap[ctxId] || ctxId || "Imported Broker";
 
-                                    log(`Queue Config Context ID: ${ctxId} (Resolved: ${brokerName}). Available keys: ${Object.keys(qEntry).join(', ')}`);
+
 
                                     if (qVal) {
                                         const newConfig = {
@@ -316,16 +321,20 @@ export default async function handler(req, res) {
                                             maxTtl: qVal.maxTtl
                                         };
 
-                                        // Update/Set config
-                                        // We trust Portal config over previous local backup if both exist? 
-                                        // Or maybe we should only add if missing? 
-                                        // "Pull" implies syncing from remote, so let's overwrite or add.
-                                        restoredQueueConfigs[brokerName] = newConfig;
+                                        // Update/Set config using ID as key if available, fallback to Name (but user prefers ID)
+                                        const key = ctxId || brokerName;
+                                        restoredQueueConfigs[key] = newConfig;
 
                                         // Ensure brokerConfigs has this broker
-                                        if (!localApp.brokerConfigs.some(bc => bc.brokerName === brokerName)) {
+                                        let existingBrokerConfig = localApp.brokerConfigs.find(bc => bc.brokerName === brokerName || (ctxId && bc.brokerContextId === ctxId));
+
+                                        if (existingBrokerConfig) {
+                                            if (ctxId && !existingBrokerConfig.brokerContextId) existingBrokerConfig.brokerContextId = ctxId;
+                                            if (brokerName !== "Imported Broker" && existingBrokerConfig.brokerName === "Imported Broker") existingBrokerConfig.brokerName = brokerName;
+                                        } else {
                                             localApp.brokerConfigs.push({
                                                 brokerName: brokerName,
+                                                brokerContextId: ctxId,
                                                 clientUsername: "", // Unknown if not found yet
                                                 clientPassword: "",
                                                 accessType: "reference"
@@ -338,21 +347,12 @@ export default async function handler(req, res) {
                             // Ignore queue config fetch errors
                         }
 
-                        // Determine "default" queueConfig for backward compatibility or display
-                        // Pick the first one from restoredQueueConfigs or default
-                        let defaultQueueConfig = {
-                            accessType: "exclusive",
-                            maxMsgSpoolUsage: 1500,
-                            permission: "consume",
-                            respectTtlEnabled: true
-                        };
-                        const firstBrokerKey = Object.keys(restoredQueueConfigs)[0];
-                        if (firstBrokerKey) {
-                            defaultQueueConfig = restoredQueueConfigs[firstBrokerKey];
-                        }
+                        // Determine "default" queueConfig omitted as requested
+
 
                         consumers.push({
                             name: c.name,
+                            solaceId: c.id, // Add Solace ID as requested
                             type: c.consumerType,
                             subscriptions: c.subscriptions ? c.subscriptions.map(s => {
                                 // Map attractedEventVersionId to local ID
@@ -369,7 +369,7 @@ export default async function handler(req, res) {
                                     attractedEventVersionId: attractedEventVersionId
                                 };
                             }) : [],
-                            queueConfig: queueConfig,
+
                             queueConfigs: restoredQueueConfigs // Restore the multi-broker configs
                         });
                     }
