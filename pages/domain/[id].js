@@ -761,6 +761,40 @@ export default function Designer() {
                                                 ))}
                                             </div>
 
+                                            {/* Broker Settings Form */}
+                                            <div style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                                    <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Broker Connection Settings</h4>
+                                                    <button onClick={(e) => removeBrokerConfig(activeBrokerConfig, e)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                        <Trash2 size={14} /> Remove Config
+                                                    </button>
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Client Username</label>
+                                                        <input
+                                                            type="text"
+                                                            className="input"
+                                                            style={{ fontSize: '0.85rem', padding: '0.3rem', width: '100%' }}
+                                                            value={selectedItem.brokerConfigs[activeBrokerConfig].clientUsername || ''}
+                                                            onChange={e => updateBrokerConfig('clientUsername', e.target.value)}
+                                                            placeholder="Solace Client Username"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Client Password</label>
+                                                        <input
+                                                            type="password"
+                                                            className="input"
+                                                            style={{ fontSize: '0.85rem', padding: '0.3rem', width: '100%' }}
+                                                            value={selectedItem.brokerConfigs[activeBrokerConfig].clientPassword || ''}
+                                                            onChange={e => updateBrokerConfig('clientPassword', e.target.value)}
+                                                            placeholder="Password (Optional)"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             {/* Configs for Active Broker */}
                                             {selectedItem.versions[selectedVersionIndex]?.consumers?.map((consumer, cIdx) => {
                                                 const activeConfig = selectedItem.brokerConfigs[activeBrokerConfig];
@@ -778,7 +812,7 @@ export default function Designer() {
                                                             <Layers size={16} /> {consumer.name}
                                                             <span style={{ fontSize: '0.75rem', opacity: 0.7, fontWeight: 'normal' }}>({consumer.type})</span>
                                                         </div>
-                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
                                                             <div>
                                                                 <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Access Type</label>
                                                                 <select
@@ -813,6 +847,27 @@ export default function Designer() {
                                                                     <option value="read-only">Read Only</option>
                                                                     <option value="no-access">No Access</option>
                                                                 </select>
+                                                            </div>
+                                                            <div>
+                                                                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Queue Name (Optional)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="input"
+                                                                    style={{ fontSize: '0.85rem', padding: '0.3rem' }}
+                                                                    value={currentConfig.queueName || ''}
+                                                                    placeholder={consumer.name}
+                                                                    onChange={e => updateQueueConfig(cIdx, 'queueName', e.target.value)}
+                                                                />
+                                                            </div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', paddingTop: '1.2rem' }}>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={currentConfig.respectTtlEnabled !== false}
+                                                                        onChange={e => updateQueueConfig(cIdx, 'respectTtlEnabled', e.target.checked)}
+                                                                    />
+                                                                    Respect TTL
+                                                                </label>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1294,7 +1349,7 @@ export default function Designer() {
                                     <button className="btn btn-sm btn-secondary" style={{ padding: '0.1rem 0.5rem', fontSize: '0.75rem' }} onClick={() => {
                                         const newConsumers = [...formData.consumers];
                                         if (!newConsumers[cIdx].subscriptions) newConsumers[cIdx].subscriptions = [];
-                                        newConsumers[cIdx].subscriptions.push({ value: '', type: 'topic' });
+                                        newConsumers[cIdx].subscriptions.push({ value: '', subscriptionType: 'topic' });
                                         setFormData({ ...formData, consumers: newConsumers });
                                     }}>
                                         <Plus size={12} /> Add Sub
@@ -1308,6 +1363,43 @@ export default function Designer() {
                                             newConsumers[cIdx].subscriptions[sIdx].value = e.target.value;
                                             setFormData({ ...formData, consumers: newConsumers });
                                         }} placeholder="Topic Subscription" />
+
+                                        {/* Linked Event Selector */}
+                                        <select
+                                            className="input"
+                                            style={{ maxWidth: '200px', fontSize: '0.85rem' }}
+                                            value={sub.attractedEventVersionId || ""}
+                                            onChange={e => {
+                                                const selectedId = e.target.value;
+                                                const newConsumers = [...formData.consumers];
+                                                const subscription = newConsumers[cIdx].subscriptions[sIdx];
+
+                                                if (selectedId) {
+                                                    // Find event to auto-fill topic
+                                                    const availableEvents = (formData.consumedEventVersionIds || []).map(id => {
+                                                        const evt = config.events.find(e => e.versions.some(v => v.id === id));
+                                                        return evt ? evt.versions.find(v => v.id === id) : null;
+                                                    }).filter(Boolean);
+
+                                                    const selectedEvent = availableEvents.find(v => v.id === selectedId);
+                                                    if (selectedEvent) {
+                                                        subscription.value = selectedEvent.topic;
+                                                        subscription.attractedEventVersionId = selectedId;
+                                                    }
+                                                } else {
+                                                    subscription.attractedEventVersionId = null;
+                                                }
+                                                setFormData({ ...formData, consumers: newConsumers });
+                                            }}
+                                        >
+                                            <option value="">Custom Topic</option>
+                                            {(formData.consumedEventVersionIds || []).map(id => {
+                                                const evt = config.events.find(e => e.versions.some(v => v.id === id));
+                                                if (!evt) return null;
+                                                const ver = evt.versions.find(v => v.id === id);
+                                                return <option key={id} value={id}>{evt.name} v{ver.version}</option>;
+                                            })}
+                                        </select>
                                         <button onClick={() => {
                                             const newConsumers = [...formData.consumers];
                                             newConsumers[cIdx].subscriptions.splice(sIdx, 1);
@@ -1390,6 +1482,36 @@ export default function Designer() {
                                     Configuration matches Solace Cloud
                                 </div>
                             )}
+                        </div>
+                    ))}
+                </div>
+            </Modal>
+
+            {/* Confirm Deletions Modal */}
+            <Modal isOpen={activeModal === 'confirmDeletions'} onClose={() => setActiveModal(null)} title="Confirm Deletions" footer={
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                    <button className="btn btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
+                    <button className="btn btn-destructive" onClick={confirmPush}>Confirm & Delete</button>
+                </div>
+            }>
+                <div style={{ padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 'var(--radius)', marginBottom: '1.5rem', color: '#ef4444' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        <AlertCircle size={20} />
+                        Warning: Redundant Resources Found
+                    </div>
+                    <p style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+                        To ensure a clean state, the following resources must be removed from the broker before applying new configurations.
+                        This usually happens when you change access types or re-create queues.
+                    </p>
+                </div>
+
+                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    <h4 style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Pending Deletions:</h4>
+                    {pendingDeletions.map((item, idx) => (
+                        <div key={idx} style={{ padding: '0.75rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', marginBottom: '0.5rem' }}>
+                            <div style={{ fontWeight: 'bold' }}>{item.type}: {item.name}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)' }}>Broker: {item.broker}</div>
+                            <div style={{ fontSize: '0.85rem', color: '#ef4444', marginTop: '0.25rem' }}>{item.count} items will be deleted</div>
                         </div>
                     ))}
                 </div>

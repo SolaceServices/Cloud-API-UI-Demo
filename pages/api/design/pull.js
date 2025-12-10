@@ -325,7 +325,8 @@ export default async function handler(req, res) {
                                             maxMsgSpoolUsage: qVal.maxMsgSpoolUsage,
                                             permission: qVal.permission,
                                             respectTtlEnabled: qVal.respectTtlEnabled !== false,
-                                            maxTtl: qVal.maxTtl
+                                            maxTtl: qVal.maxTtl,
+                                            queueName: qVal.queueName // Capture explicit queue name
                                         };
 
                                         // Update/Set config using ID as key if available, fallback to Name (but user prefers ID)

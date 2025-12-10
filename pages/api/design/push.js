@@ -559,7 +559,11 @@ export default async function handler(req, res) {
                                 name: consumer.name,
                                 consumerType: consumer.consumerType,
                                 brokerType: "solace",
-                                subscriptions: consumer.subscriptions
+                                subscriptions: (consumer.subscriptions || []).map(s => ({
+                                    subscriptionType: s.subscriptionType || s.type || 'topic',
+                                    value: s.value,
+                                    attractedEventVersionId: s.attractedEventVersionId
+                                }))
                             };
 
                             let consumerId = null;
@@ -590,14 +594,23 @@ export default async function handler(req, res) {
                                     // Resolve Queue Config
                                     // Need to find original consumer to get specific config
                                     const originalConsumer = version.consumers.find(c => c.name === consumer.name);
-                                    const specificQueueConfig = originalConsumer.queueConfigs?.[brokerConfig.brokerName] || originalConsumer.queueConfig || {
-                                        accessType: "exclusive",
-                                        maxMsgSpoolUsage: 1500,
-                                        permission: "consume",
-                                        respectTtlEnabled: true
-                                    };
+
+                                    // Key logic: Try Context ID first (preferred), then Broker Name (legacy/fallback)
+                                    const contextKey = appContextId;
+                                    const nameKey = brokerConfig.brokerName;
+
+                                    const specificQueueConfig =
+                                        originalConsumer.queueConfigs?.[contextKey] ||
+                                        originalConsumer.queueConfigs?.[nameKey] ||
+                                        originalConsumer.queueConfig || {
+                                            accessType: "exclusive",
+                                            maxMsgSpoolUsage: 1500,
+                                            permission: "consume",
+                                            respectTtlEnabled: true
+                                        };
 
                                     log(`Configuring queue for ${consumer.name} on ${brokerConfig.brokerName}...`);
+                                    const targetQueueName = specificQueueConfig.queueName || consumer.name;
                                     const configPayload = {
                                         consumerId: consumerId,
                                         entityId: consumerId,
@@ -606,7 +619,7 @@ export default async function handler(req, res) {
                                         configurationTypeId: "solaceQueue",
                                         value: {
                                             ...specificQueueConfig,
-                                            queueName: consumer.name
+                                            queueName: targetQueueName
                                         }
                                     };
                                     try {
@@ -627,11 +640,24 @@ export default async function handler(req, res) {
 
                                             matchingConfig = existingConfigs.data.find(c =>
                                                 c.value &&
-                                                c.value.queueName === consumer.name &&
+                                                c.value.queueName === targetQueueName &&
                                                 c.value.accessType === specificQueueConfig.accessType &&
                                                 c.value.maxMsgSpoolUsage === specificQueueConfig.maxMsgSpoolUsage &&
                                                 c.value.permission === specificQueueConfig.permission
                                             );
+
+                                            if (!matchingConfig && existingConfigs.data.length > 0) {
+                                                log(`[DEBUG] Mismatch for ${consumer.name} on ${brokerConfig.brokerName}`);
+                                                log(`[DEBUG] Local: ${JSON.stringify(specificQueueConfig)}`);
+                                                existingConfigs.data.forEach((c, i) => {
+                                                    log(`[DEBUG] Remote [${i}]: ${JSON.stringify({
+                                                        queueName: c.value.queueName,
+                                                        accessType: c.value.accessType,
+                                                        maxMsgSpoolUsage: c.value.maxMsgSpoolUsage,
+                                                        permission: c.value.permission
+                                                    })}`);
+                                                });
+                                            }
                                             configsToDelete = existingConfigs.data.filter(c => c !== matchingConfig);
 
                                             if (configsToDelete.length > 0) {
