@@ -1,0 +1,12 @@
+[
+    {
+        "id": "ctx-broker-1",
+        "name": "Test Broker 1",
+        "serviceId": "svc-1"
+    },
+    {
+        "id": "ctx-broker-2",
+        "name": "Test Broker 2",
+        "serviceId": "svc-2"
+    }
+]

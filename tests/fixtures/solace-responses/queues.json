@@ -1,0 +1,21 @@
+[
+    {
+        "value": {
+            "permission": "consume",
+            "accessType": "exclusive",
+            "maxMsgSpoolUsage": 1500,
+            "respectTtlEnabled": true,
+            "maxTtl": 60000
+        },
+        "contextId": "ctx-broker-1"
+    },
+    {
+        "value": {
+            "permission": "read-only",
+            "accessType": "exclusive",
+            "maxMsgSpoolUsage": 2000,
+            "respectTtlEnabled": false
+        },
+        "contextId": "ctx-broker-2"
+    }
+]

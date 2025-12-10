@@ -1,0 +1,73 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Pull API Logic should pull configuration and produce stable output with multi-broker support 1`] = `
+{
+  "applicationDomains": [
+    {
+      "description": "",
+      "id": "mock-uuid",
+      "name": "Test Domain",
+      "solaceId": "dom-1",
+    },
+  ],
+  "applications": [
+    {
+      "brokerConfigs": [
+        {
+          "accessType": "exclusive",
+          "brokerContextId": "ctx-broker-1",
+          "brokerName": "Test Broker 1",
+          "clientPassword": "",
+          "clientUsername": "client-user-1",
+        },
+        {
+          "accessType": "exclusive",
+          "brokerContextId": "ctx-broker-2",
+          "brokerName": "Test Broker 2",
+          "clientPassword": "",
+          "clientUsername": "client-user-2",
+        },
+      ],
+      "domainId": "mock-uuid",
+      "id": "mock-uuid",
+      "name": "Test App",
+      "solaceId": "app-1",
+      "versions": [
+        {
+          "consumedEventVersionIds": [],
+          "consumers": [
+            {
+              "name": "test-consumer",
+              "queueConfigs": {
+                "ctx-broker-1": {
+                  "accessType": "exclusive",
+                  "maxMsgSpoolUsage": 1500,
+                  "maxTtl": 60000,
+                  "permission": "consume",
+                  "respectTtlEnabled": true,
+                },
+                "ctx-broker-2": {
+                  "accessType": "exclusive",
+                  "maxMsgSpoolUsage": 2000,
+                  "permission": "read-only",
+                  "respectTtlEnabled": false,
+                },
+              },
+              "solaceId": "con-1",
+              "subscriptions": [],
+              "type": "eventQueue",
+            },
+          ],
+          "id": "mock-uuid",
+          "producedEventVersionIds": [],
+          "solaceId": "ver-1",
+          "stateId": "1",
+          "version": "1.0.0",
+        },
+      ],
+    },
+  ],
+  "events": [],
+  "schemas": [],
+}
+`;

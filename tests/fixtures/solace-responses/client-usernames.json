@@ -1,0 +1,16 @@
+[
+    {
+        "value": {
+            "clientUsername": "client-user-1",
+            "accessType": "exclusive"
+        },
+        "contextId": "ctx-broker-1"
+    },
+    {
+        "value": {
+            "clientUsername": "client-user-2",
+            "accessType": "exclusive"
+        },
+        "contextId": "ctx-broker-2"
+    }
+]
