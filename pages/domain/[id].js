@@ -337,7 +337,8 @@ export default function Designer() {
                     id: versionId,
                     version: formData.version,
                     stateId: formData.stateId,
-                    consumedEventVersionIds: formData.consumedEventVersionIds || []
+                    consumedEventVersionIds: formData.consumedEventVersionIds || [],
+                    producedEventVersionIds: formData.producedEventVersionIds || []
                 }]
             });
         }
@@ -1065,6 +1066,26 @@ export default function Designer() {
                             onChange={e => {
                                 const selected = Array.from(e.target.selectedOptions, option => option.value);
                                 setFormData({ ...formData, consumedEventVersionIds: selected });
+                            }}
+                        >
+                            {config.events.map(event =>
+                                event.versions.map(v => (
+                                    <option key={v.id} value={v.id}>{event.name} v{v.version}</option>
+                                ))
+                            )}
+                        </select>
+                        <small style={{ color: 'var(--muted-foreground)' }}>Hold Ctrl/Cmd to select multiple</small>
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Published Events (Optional)</label>
+                        <select
+                            className="input"
+                            multiple
+                            style={{ height: '100px' }}
+                            value={formData.producedEventVersionIds || []}
+                            onChange={e => {
+                                const selected = Array.from(e.target.selectedOptions, option => option.value);
+                                setFormData({ ...formData, producedEventVersionIds: selected });
                             }}
                         >
                             {config.events.map(event =>

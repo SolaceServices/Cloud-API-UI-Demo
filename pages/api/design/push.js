@@ -456,8 +456,8 @@ export default async function handler(req, res) {
                     declaredProducedEventVersionIds: producedEventVersionIds,
                     messagingSettings: {
                         brokerType: "solace",
-                        ...(app.clientUsername ? { clientUsername: app.clientUsername } : {}),
-                        ...(app.clientUsername ? { clientUsername: app.clientUsername } : {}),
+                        ...(brokerConfigs.length > 0 && brokerConfigs[0].clientUsername ? { clientUsername: brokerConfigs[0].clientUsername } : {}),
+                        ...(app.clientUsername ? { clientUsername: app.clientUsername } : {}), // Legacy fallback
                         // clientPassword is now handled via dedicated configuration API
                         ...(version.messagingSettings?.clientUsername ? { clientUsername: version.messagingSettings.clientUsername } : {}), // Keep version override if exists
                         ...(version.messagingSettings?.clientProfile ? {

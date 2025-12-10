@@ -201,7 +201,6 @@ export default async function handler(req, res) {
                         id: uuidv4(),
                         name: appData.name,
                         domainId: localDomain.id,
-                        brokerName: "", // Cannot fetch this easily from App object, usually set manually
                         brokerConfigs: [], // Initialize empty array for multi-broker configs
                         versions: [],
                         solaceId: appData.id
@@ -223,8 +222,12 @@ export default async function handler(req, res) {
 
 
 
+
+                        const ctxId = uEntry.contextId;
+                        const brokerName = contextMap[ctxId] || ctxId || "Imported Broker";
+
                         if (configVal && configVal.clientUsername) {
-                            localApp.clientUsername = configVal.clientUsername; // Fallback
+
                             log(`Imported Client Username: ${configVal.clientUsername} for Broker: ${brokerName}`);
 
                             const existingConfig = localApp.brokerConfigs.find(bc => bc.brokerName === brokerName || (ctxId && bc.brokerContextId === ctxId));
@@ -311,6 +314,10 @@ export default async function handler(req, res) {
                                     const qVal = qEntry.value;
 
 
+
+
+                                    const ctxId = qEntry.contextId;
+                                    const brokerName = contextMap[ctxId] || ctxId || "Imported Broker";
 
                                     if (qVal) {
                                         const newConfig = {
