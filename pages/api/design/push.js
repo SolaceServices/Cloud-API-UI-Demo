@@ -333,18 +333,16 @@ export default async function handler(req, res) {
             log(`Processing Application: ${app.name}`);
 
             // Resolve App Context (Broker)
-            // Resolve App Context (Broker)
-            let appContextId = null;
-            if (app.brokerName) {
-                const appBroker = brokers.data.find(b => b.name === app.brokerName);
-                if (appBroker) {
-                    appContextId = appBroker.id;
-                    log(`Using App-Specific Broker Context: ${appBroker.name} (${appContextId})`);
-                } else {
-                    log(`Error: App configured broker '${app.brokerName}' not found.`);
-                }
-            } else {
-                log(`Warning: No brokerName specified for app '${app.name}'. Configuration (Queues/Client Username) will be skipped.`);
+            // Resolve Broker Configs
+            const brokerConfigs = app.brokerConfigs || (app.brokerName ? [{
+                brokerName: app.brokerName,
+                clientUsername: app.clientUsername,
+                clientPassword: app.clientPassword,
+                accessType: app.accessType || 'reference'
+            }] : []);
+
+            if (brokerConfigs.length === 0) {
+                log(`Warning: No brokers configured for app '${app.name}'. Queues and Client Usernames will be skipped.`);
             }
 
             const domain = config.applicationDomains.find(d => d.id === app.domainId);
@@ -535,84 +533,7 @@ export default async function handler(req, res) {
                     }
                 }
 
-                // Manage Client Username Configuration (Dedicated API)
-                if (app.accessType === 'basic' && app.clientUsername && app.clientPassword && app.solaceId) {
-                    try {
-                        log(`Configuring Client Username for ${app.name}...`);
-                        const clientUserPayload = {
-                            entityId: app.solaceId,
-                            entityType: "application",
-                            contextId: appContextId,
-                            contextType: "EVENT_BROKER",
-                            configurationTypeId: "solaceClientUsername",
-                            value: {
-                                clientUsername: app.clientUsername,
-                                password: app.clientPassword
-                            }
-                        };
-
-                        if (!appContextId) throw new Error("No Broker Context available");
-
-                        // Check if config already exists
-                        let existingConfigs = { data: [] };
-                        try {
-                            const query = `?entityIds=${app.solaceId}&eventBrokerIds=${appContextId}`;
-                            existingConfigs = await solaceApiCallAll(`${ENDPOINTS.CONFIG_CLIENT_USERNAMES}${query}`, token);
-                            log(`Check Client Username result: found ${existingConfigs.data ? existingConfigs.data.length : 0} configs`);
-                        } catch (fetchErr) {
-                            log(`Warning: Failed to check existing Client Username config: ${fetchErr.message}`);
-                        }
-
-                        let matchingConfig = null;
-                        let configsToDelete = [];
-
-                        if (existingConfigs.data && existingConfigs.data.length > 0) {
-                            matchingConfig = existingConfigs.data.find(c => c.value && c.value.clientUsername === app.clientUsername);
-                            configsToDelete = existingConfigs.data.filter(c => c !== matchingConfig);
-
-                            if (configsToDelete.length > 0) {
-                                if (!confirmDeletions) {
-                                    log(`Found ${configsToDelete.length} redundant Client Username configs. Pending confirmation...`);
-                                    pendingDeletions.push({
-                                        type: 'Client Username',
-                                        name: app.clientUsername,
-                                        broker: app.brokerName,
-                                        count: configsToDelete.length,
-                                        operations: configsToDelete.map(c => ({
-                                            method: 'DELETE',
-                                            url: `${ENDPOINTS.CONFIG_CLIENT_USERNAMES}/${c.id}`
-                                        }))
-                                    });
-                                } else {
-                                    log(`Found ${configsToDelete.length} redundant Client Username configs. Deleting...`);
-                                    for (const config of configsToDelete) {
-                                        log(`Deleting old config ${config.id}...`);
-                                        await solaceApiCall('DELETE', `${ENDPOINTS.CONFIG_CLIENT_USERNAMES}/${config.id}`, null, token);
-                                    }
-                                    // Wait for deletions to propagate
-                                    log('Waiting 2s for deletions to propagate...');
-                                    await new Promise(resolve => setTimeout(resolve, 2000));
-                                }
-                            }
-                        }
-
-                        const isBlocked = !confirmDeletions && configsToDelete.length > 0;
-
-                        if (matchingConfig) {
-                            log(`Client Username for ${app.name} is up to date. Skipping creation.`);
-                        } else if (isBlocked) {
-                            log(`Skipping creation of Client Username for ${app.name} due to pending deletion.`);
-                        } else {
-                            log(`Creating new Client Username config for ${app.name}...`);
-                            await solaceApiCall('POST', ENDPOINTS.CONFIG_CLIENT_USERNAMES, clientUserPayload, token);
-                            log(`Configured Client Username for ${app.name}`);
-                        }
-
-                    } catch (e) {
-                        log(`Error configuring Client Username for ${app.name}: ${e.message}`);
-                        errorCount++;
-                    }
-                }
+                // (Client Username logic moved outside version loop)
 
                 // 5. Consumers & Queues
                 if (versionId && consumers.length > 0) {
@@ -656,88 +577,105 @@ export default async function handler(req, res) {
                                 log(`Created consumer ${consumer.name}`);
                             }
 
-                            // 4. Create Queue Configuration (Separate Step)
+                            // 4. Create Queue Configuration (Iterate Brokers)
                             if (consumerId) {
-                                log(`Configuring queue for ${consumer.name}...`);
-                                const configPayload = {
-                                    consumerId: consumerId,
-                                    entityId: consumerId,
-                                    contextId: appContextId,
-                                    contextType: "EVENT_BROKER",
-                                    configurationTypeId: "solaceQueue",
-                                    value: {
-                                        ...queueConfig,
-                                        queueName: consumer.name
+                                for (const brokerConfig of brokerConfigs) {
+                                    const appBroker = brokers.data.find(b => b.name === brokerConfig.brokerName);
+                                    if (!appBroker) {
+                                        log(`Warning: Broker '${brokerConfig.brokerName}' not found. Skipping queue config.`);
+                                        continue;
                                     }
-                                };
-                                try {
-                                    if (!appContextId) throw new Error("No Broker Context available");
+                                    const appContextId = appBroker.id;
 
-                                    // Check if config already exists
-                                    let existingConfigs = { data: [] };
+                                    // Resolve Queue Config
+                                    // Need to find original consumer to get specific config
+                                    const originalConsumer = version.consumers.find(c => c.name === consumer.name);
+                                    const specificQueueConfig = originalConsumer.queueConfigs?.[brokerConfig.brokerName] || originalConsumer.queueConfig || {
+                                        accessType: "exclusive",
+                                        maxMsgSpoolUsage: 1500,
+                                        permission: "consume",
+                                        respectTtlEnabled: true
+                                    };
+
+                                    log(`Configuring queue for ${consumer.name} on ${brokerConfig.brokerName}...`);
+                                    const configPayload = {
+                                        consumerId: consumerId,
+                                        entityId: consumerId,
+                                        contextId: appContextId,
+                                        contextType: "EVENT_BROKER",
+                                        configurationTypeId: "solaceQueue",
+                                        value: {
+                                            ...specificQueueConfig,
+                                            queueName: consumer.name
+                                        }
+                                    };
                                     try {
-                                        const query = `?entityIds=${consumerId}&eventBrokerIds=${appContextId}`;
-                                        existingConfigs = await solaceApiCallAll(`${ENDPOINTS.CONFIG_QUEUES}${query}`, token);
-                                        log(`Check Queue Config result for ${consumer.name}: found ${existingConfigs.data ? existingConfigs.data.length : 0} configs`);
-                                    } catch (fetchErr) {
-                                        log(`Warning: Failed to check existing queue config: ${fetchErr.message}`);
-                                    }
+                                        // Check if config already exists
+                                        let existingConfigs = { data: [] };
+                                        try {
+                                            const query = `?entityIds=${consumerId}&eventBrokerIds=${appContextId}`;
+                                            existingConfigs = await solaceApiCallAll(`${ENDPOINTS.CONFIG_QUEUES}${query}`, token);
+                                            log(`Check Queue Config result for ${consumer.name} on ${brokerConfig.brokerName}: found ${existingConfigs.data ? existingConfigs.data.length : 0} configs`);
+                                        } catch (fetchErr) {
+                                            log(`Warning: Failed to check existing queue config: ${fetchErr.message}`);
+                                        }
 
-                                    let matchingConfig = null;
-                                    let configsToDelete = [];
+                                        let matchingConfig = null;
+                                        let configsToDelete = [];
 
-                                    if (existingConfigs.data && existingConfigs.data.length > 0) {
+                                        if (existingConfigs.data && existingConfigs.data.length > 0) {
 
-                                        matchingConfig = existingConfigs.data.find(c =>
-                                            c.value &&
-                                            c.value.queueName === consumer.name &&
-                                            c.value.accessType === queueConfig.accessType &&
-                                            c.value.maxMsgSpoolUsage === queueConfig.maxMsgSpoolUsage &&
-                                            c.value.permission === queueConfig.permission
-                                        );
-                                        configsToDelete = existingConfigs.data.filter(c => c !== matchingConfig);
+                                            matchingConfig = existingConfigs.data.find(c =>
+                                                c.value &&
+                                                c.value.queueName === consumer.name &&
+                                                c.value.accessType === specificQueueConfig.accessType &&
+                                                c.value.maxMsgSpoolUsage === specificQueueConfig.maxMsgSpoolUsage &&
+                                                c.value.permission === specificQueueConfig.permission
+                                            );
+                                            configsToDelete = existingConfigs.data.filter(c => c !== matchingConfig);
 
-                                        if (configsToDelete.length > 0) {
-                                            if (!confirmDeletions) {
-                                                log(`Found ${configsToDelete.length} redundant queue configs for ${consumer.name}. Pending confirmation...`);
-                                                pendingDeletions.push({
-                                                    type: 'Queue',
-                                                    name: consumer.name,
-                                                    broker: app.brokerName,
-                                                    count: configsToDelete.length,
-                                                    operations: configsToDelete.map(c => ({
-                                                        method: 'DELETE',
-                                                        url: `${ENDPOINTS.CONFIG_QUEUES}/${c.id}`
-                                                    }))
-                                                });
-                                            } else {
-                                                log(`Found ${configsToDelete.length} redundant queue configs for ${consumer.name}. Deleting...`);
-                                                for (const config of configsToDelete) {
-                                                    log(`Deleting old config ${config.id}...`);
-                                                    await solaceApiCall('DELETE', `${ENDPOINTS.CONFIG_QUEUES}/${config.id}`, null, token);
+                                            if (configsToDelete.length > 0) {
+                                                if (!confirmDeletions) {
+                                                    log(`Found ${configsToDelete.length} redundant queue configs for ${consumer.name} on ${brokerConfig.brokerName}. Pending confirmation...`);
+                                                    pendingDeletions.push({
+                                                        type: 'Queue',
+                                                        name: consumer.name,
+                                                        broker: brokerConfig.brokerName,
+                                                        count: configsToDelete.length,
+                                                        operations: configsToDelete.map(c => ({
+                                                            method: 'DELETE',
+                                                            url: `${ENDPOINTS.CONFIG_QUEUES}/${c.id}`
+                                                        }))
+                                                    });
+                                                } else {
+                                                    log(`Found ${configsToDelete.length} redundant queue configs for ${consumer.name} on ${brokerConfig.brokerName}. Deleting...`);
+                                                    for (const config of configsToDelete) {
+                                                        log(`Deleting old config ${config.id}...`);
+                                                        await solaceApiCall('DELETE', `${ENDPOINTS.CONFIG_QUEUES}/${config.id}`, null, token);
+                                                    }
+                                                    // Wait for deletions to propagate
+                                                    log('Waiting 2s for deletions to propagate...');
+                                                    await new Promise(resolve => setTimeout(resolve, 2000));
                                                 }
-                                                // Wait for deletions to propagate
-                                                log('Waiting 2s for deletions to propagate...');
-                                                await new Promise(resolve => setTimeout(resolve, 2000));
                                             }
                                         }
+
+
+                                        const isBlocked = !confirmDeletions && configsToDelete.length > 0;
+
+                                        if (matchingConfig) {
+                                            log(`Queue config for ${consumer.name} on ${brokerConfig.brokerName} is up to date. Skipping creation.`);
+                                        } else if (isBlocked) {
+                                            log(`Skipping creation of queue for ${consumer.name} on ${brokerConfig.brokerName} due to pending deletion.`);
+                                        } else {
+                                            log(`Creating new queue config for ${consumer.name} on ${brokerConfig.brokerName}...`);
+                                            await solaceApiCall('POST', ENDPOINTS.CONFIG_QUEUES, configPayload, token);
+                                            log(`Configured queue ${consumer.name} on ${brokerConfig.brokerName}`);
+                                        }
+                                    } catch (configErr) {
+                                        log(`Warning: Failed to configure queue ${consumer.name} on ${brokerConfig.brokerName}: ${configErr.message}`);
+                                        // Don't fail the whole push, just log warning
                                     }
-
-
-                                    const isBlocked = !confirmDeletions && configsToDelete.length > 0;
-
-                                    if (matchingConfig) {
-                                        log(`Queue config for ${consumer.name} is up to date. Skipping creation.`);
-                                    } else if (isBlocked) {
-                                        log(`Skipping creation of queue for ${consumer.name} due to pending deletion.`);
-                                    } else {
-                                        log(`Creating new queue config for ${consumer.name}...`);
-                                        await solaceApiCall('POST', ENDPOINTS.CONFIG_QUEUES, configPayload, token);
-                                        log(`Configured queue ${consumer.name}`);
-                                    }
-                                } catch (configErr) {
-                                    log(`Warning: Failed to configure queue ${consumer.name}: ${configErr.message}`);
-                                    // Don't fail the whole push, just log warning
                                 }
                             }
                         }

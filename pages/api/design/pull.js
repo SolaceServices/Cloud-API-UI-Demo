@@ -43,6 +43,28 @@ export default async function handler(req, res) {
 
         log(`Starting Pull for Domain ID: ${domainId}...`);
 
+        // 0. Fetch Contexts (Brokers) to map IDs to Names
+        let contextMap = {};
+        try {
+            log('Fetching Broker Contexts...');
+            let brokersRes = await solaceApiCall('GET', ENDPOINTS.MODELED_EVENT_BROKERS, null, token);
+            if (!brokersRes.data || brokersRes.data.length === 0) {
+                log('Primary endpoint returned no data, trying fallback...');
+                brokersRes = await solaceApiCall('GET', ENDPOINTS.MODELED_EVENT_BROKERS_FALLBACK, null, token);
+            }
+            if (brokersRes.data) {
+                brokersRes.data.forEach(b => {
+                    contextMap[b.id] = b.name;
+                    log(`Context Map: ${b.id} -> ${b.name}`);
+                });
+                log(`Mapped ${Object.keys(contextMap).length} broker contexts.`);
+            } else {
+                log('No broker contexts found.');
+            }
+        } catch (e) {
+            log(`Warning: Failed to fetch broker contexts: ${e.message}`);
+        }
+
         // 1. Fetch Domain Details
         const domainRes = await solaceApiCall('GET', `${ENDPOINTS.APPLICATION_DOMAINS}/${domainId}`, null, token);
         const domainData = domainRes.data;
@@ -174,6 +196,7 @@ export default async function handler(req, res) {
                         name: appData.name,
                         domainId: localDomain.id,
                         brokerName: "", // Cannot fetch this easily from App object, usually set manually
+                        brokerConfigs: [], // Initialize empty array for multi-broker configs
                         versions: [],
                         solaceId: appData.id
                     };
@@ -181,62 +204,177 @@ export default async function handler(req, res) {
                 }
             }
 
+            // Ensure brokerConfigs exists
+            if (!localApp.brokerConfigs) localApp.brokerConfigs = [];
+
+            // Fetch Client Username (if any)
+            // Fetch Client Usernames (Multi-Broker)
+            try {
+                const clientUserConfigsRes = await solaceApiCallAll(`${ENDPOINTS.CONFIG_CLIENT_USERNAMES}?entityIds=${appData.id}`, token);
+                if (clientUserConfigsRes.data && clientUserConfigsRes.data.length > 0) {
+                    clientUserConfigsRes.data.forEach(uEntry => {
+                        const configVal = uEntry.value;
+                        const ctxId = uEntry.appContextId || uEntry.applicationContextId;
+                        const brokerName = contextMap[ctxId] || ctxId || "Imported Broker";
+
+                        log(`Client Config Context ID: ${ctxId} (Resolved: ${brokerName}). Keys: ${Object.keys(uEntry).join(', ')}`);
+
+                        if (configVal && configVal.clientUsername) {
+                            localApp.clientUsername = configVal.clientUsername; // Fallback
+                            log(`Imported Client Username: ${configVal.clientUsername} for Broker: ${brokerName}`);
+
+                            const existingConfig = localApp.brokerConfigs.find(bc => bc.brokerName === brokerName);
+                            // Check if configVal has accessType or we can infer it
+                            const importedAccessType = configVal.accessType || "reference";
+
+                            if (existingConfig) {
+                                existingConfig.clientUsername = configVal.clientUsername;
+                                existingConfig.accessType = importedAccessType;
+                            } else {
+                                localApp.brokerConfigs.push({
+                                    brokerName: brokerName,
+                                    clientUsername: configVal.clientUsername,
+                                    clientPassword: "",
+                                    accessType: importedAccessType
+                                });
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                log(`Warning: Failed to fetch Client Username for ${appData.name}: ${e.message}`);
+            }
+
             // Fetch App Versions
             const versionsRes = await solaceApiCallAll(`${ENDPOINTS.APPLICATION_VERSIONS}?applicationIds=${appData.id}`, token);
 
-            // Sort versions to find the latest
-            const sortedVersions = versionsRes.data.sort((a, b) => {
-                const vA = a.version.split('.').map(Number);
-                const vB = b.version.split('.').map(Number);
-                for (let i = 0; i < Math.max(vA.length, vB.length); i++) {
-                    const numA = vA[i] || 0;
-                    const numB = vB[i] || 0;
-                    if (numA > numB) return -1;
-                    if (numA < numB) return 1;
-                }
-                return 0;
-            });
-
-            const latestVersionId = sortedVersions.length > 0 ? sortedVersions[0].id : null;
+            // BACKUP existing local configurations (Queue Configs are inside consumers, inside versions)
+            const existingConsumerConfigs = {}; // Map: version -> consumerName -> { queueConfigs, queueConfig }
+            if (localApp.versions) {
+                localApp.versions.forEach(ver => {
+                    if (ver.consumers) {
+                        ver.consumers.forEach(con => {
+                            if (!existingConsumerConfigs[ver.version]) existingConsumerConfigs[ver.version] = {};
+                            existingConsumerConfigs[ver.version][con.name] = {
+                                queueConfigs: con.queueConfigs,
+                                queueConfig: con.queueConfig
+                            };
+                        });
+                    }
+                });
+            }
 
             localApp.versions = []; // Reset versions to rebuild
             for (const v of versionsRes.data) {
                 let consumers = [];
 
-                // OPTIMIZATION: Only fetch consumers for the latest version
-                if (v.id === latestVersionId) {
-                    // Fetch Consumers for this version
-                    // Note: Solace API often uses plural 'Ids' for filters. Switching to applicationVersionIds.
+                // Fetch Consumers for this version (ALL versions, not just latest)
+                try {
                     const consumersRes = await solaceApiCallAll(`${ENDPOINTS.CONSUMERS}?applicationVersionIds=${v.id}`, token);
-                    log(`Fetched ${consumersRes.data.length} consumers for App Version ${v.version} (ID: ${v.id})`);
-                    consumers = consumersRes.data.map(c => ({
-                        name: c.name,
-                        type: c.consumerType,
-                        subscriptions: c.subscriptions ? c.subscriptions.map(s => {
-                            // Map attractedEventVersionId to local ID
-                            let attractedEventVersionId = null;
-                            if (s.attractedEventVersionIds && s.attractedEventVersionIds.length > 0) {
-                                const evId = s.attractedEventVersionIds[0].eventVersionId;
-                                const linkedEvent = config.events.find(e => e.versions.some(ev => ev.solaceId === evId));
-                                const linkedEventVersion = linkedEvent?.versions.find(ev => ev.solaceId === evId);
-                                if (linkedEventVersion) attractedEventVersionId = linkedEventVersion.id;
-                            }
-                            return {
-                                subscriptionType: s.subscriptionType,
-                                value: s.value,
-                                attractedEventVersionId: attractedEventVersionId
-                            };
-                        }) : [],
-                        // Queue Config is not directly in Consumer object, it's a separate config object.
-                        // For now, we might skip detailed queue config or try to fetch it if critical.
-                        // The user asked to "dump resources", basic consumer info might be enough.
-                        queueConfig: {
+                    // log(`Fetched ${consumersRes.data.length} consumers for App Version ${v.version} (ID: ${v.id})`); // Reduce log spam
+
+                    for (const c of consumersRes.data) {
+                        // Fetch Queue Config for this consumer
+                        let queueConfig = {
                             accessType: "exclusive", // Default
                             maxMsgSpoolUsage: 1500,
                             permission: "consume",
                             respectTtlEnabled: true
+                        };
+
+                        // RESTORE local configurations if they exist
+                        let restoredQueueConfigs = undefined;
+                        if (existingConsumerConfigs[v.version] && existingConsumerConfigs[v.version][c.name]) {
+                            const saved = existingConsumerConfigs[v.version][c.name];
+                            if (saved.queueConfigs) {
+                                restoredQueueConfigs = saved.queueConfigs;
+                            }
                         }
-                    }));
+
+                        // Initialize restoredQueueConfigs if empty so we can add portal configs
+                        if (!restoredQueueConfigs) restoredQueueConfigs = {};
+
+                        // Fetch Queue Configs from Portal (Multi-Broker)
+                        try {
+                            const queueConfigsRes = await solaceApiCallAll(`${ENDPOINTS.CONFIG_QUEUES}?entityIds=${c.id}`, token);
+                            if (queueConfigsRes.data && queueConfigsRes.data.length > 0) {
+                                queueConfigsRes.data.forEach(qEntry => {
+                                    const qVal = qEntry.value;
+                                    // CHECK PROPERTY NAME here. It might be 'applicationContextId' or 'eventBrokerContextId' or similar.
+                                    // Based on standard Solace API, it's often 'appContextId' in some objects, but let's log keys to be sure.
+                                    const ctxId = qEntry.appContextId || qEntry.applicationContextId || qEntry.eventMeshId;
+                                    const brokerName = contextMap[ctxId] || ctxId || "Imported Broker";
+
+                                    log(`Queue Config Context ID: ${ctxId} (Resolved: ${brokerName}). Available keys: ${Object.keys(qEntry).join(', ')}`);
+
+                                    if (qVal) {
+                                        const newConfig = {
+                                            accessType: qVal.accessType,
+                                            maxMsgSpoolUsage: qVal.maxMsgSpoolUsage,
+                                            permission: qVal.permission,
+                                            respectTtlEnabled: qVal.respectTtlEnabled !== false,
+                                            maxTtl: qVal.maxTtl
+                                        };
+
+                                        // Update/Set config
+                                        // We trust Portal config over previous local backup if both exist? 
+                                        // Or maybe we should only add if missing? 
+                                        // "Pull" implies syncing from remote, so let's overwrite or add.
+                                        restoredQueueConfigs[brokerName] = newConfig;
+
+                                        // Ensure brokerConfigs has this broker
+                                        if (!localApp.brokerConfigs.some(bc => bc.brokerName === brokerName)) {
+                                            localApp.brokerConfigs.push({
+                                                brokerName: brokerName,
+                                                clientUsername: "", // Unknown if not found yet
+                                                clientPassword: "",
+                                                accessType: "reference"
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        } catch (e) {
+                            // Ignore queue config fetch errors
+                        }
+
+                        // Determine "default" queueConfig for backward compatibility or display
+                        // Pick the first one from restoredQueueConfigs or default
+                        let defaultQueueConfig = {
+                            accessType: "exclusive",
+                            maxMsgSpoolUsage: 1500,
+                            permission: "consume",
+                            respectTtlEnabled: true
+                        };
+                        const firstBrokerKey = Object.keys(restoredQueueConfigs)[0];
+                        if (firstBrokerKey) {
+                            defaultQueueConfig = restoredQueueConfigs[firstBrokerKey];
+                        }
+
+                        consumers.push({
+                            name: c.name,
+                            type: c.consumerType,
+                            subscriptions: c.subscriptions ? c.subscriptions.map(s => {
+                                // Map attractedEventVersionId to local ID
+                                let attractedEventVersionId = null;
+                                if (s.attractedEventVersionIds && s.attractedEventVersionIds.length > 0) {
+                                    const evId = s.attractedEventVersionIds[0].eventVersionId;
+                                    const linkedEvent = config.events.find(e => e.versions.some(ev => ev.solaceId === evId));
+                                    const linkedEventVersion = linkedEvent?.versions.find(ev => ev.solaceId === evId);
+                                    if (linkedEventVersion) attractedEventVersionId = linkedEventVersion.id;
+                                }
+                                return {
+                                    subscriptionType: s.subscriptionType,
+                                    value: s.value,
+                                    attractedEventVersionId: attractedEventVersionId
+                                };
+                            }) : [],
+                            queueConfig: queueConfig,
+                            queueConfigs: restoredQueueConfigs // Restore the multi-broker configs
+                        });
+                    }
+                } catch (e) {
+                    log(`Warning: Failed to fetch consumers for ${appData.name} v${v.version}: ${e.message}`);
                 }
 
                 // Map Produced/Consumed Events

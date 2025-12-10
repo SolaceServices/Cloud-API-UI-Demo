@@ -12,12 +12,12 @@ export default function Designer() {
     const [deploying, setDeploying] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [logs, setLogs] = useState([]);
-    const [activeModal, setActiveModal] = useState(null); // 'domain', 'sync', 'confirmDeletions'
+    const [activeModal, setActiveModal] = useState(null); // 'domain', 'schema', 'event', 'app', 'sync', 'version', 'detailedSyncReport'
     const [formData, setFormData] = useState({});
     const [syncReport, setSyncReport] = useState(null);
     const [pendingDeletions, setPendingDeletions] = useState([]);
 
-    const [showSyncModal, setShowSyncModal] = useState(false);
+    // const [showSyncModal, setShowSyncModal] = useState(false);
     const [checkingSync, setCheckingSync] = useState(false);
 
     useEffect(() => {
@@ -63,7 +63,7 @@ export default function Designer() {
             });
             const data = await res.json();
             setSyncReport(data);
-            setShowSyncModal(true);
+            setActiveModal('detailedSyncReport');
         } catch (err) {
             console.error(err);
             alert('Failed to check sync status');
@@ -185,7 +185,7 @@ export default function Designer() {
 
     const deleteDomain = (index, e) => {
         e.stopPropagation();
-        if (!confirm('Are you sure? This will delete the domain and ALL its resources (Applications, Events, Schemas).')) return;
+        if (!confirm('Are you sure? This will delete the domain and ALL its resources (Applications, Events, Schemas).\n\n(Note: This will only delete the resources locally)')) return;
 
         const newConfig = { ...config };
         const domainId = newConfig.applicationDomains[index].id;
@@ -345,8 +345,8 @@ export default function Designer() {
                 </div>
             </Modal>
 
-            {/* Sync Modal */}
-            <Modal isOpen={activeModal === 'sync'} onClose={() => setActiveModal(null)} title="Sync Report">
+            {/* Sync Report Modal (Shared for Sync and Check Sync) */}
+            <Modal isOpen={activeModal === 'sync' || activeModal === 'syncReport'} onClose={() => setActiveModal(null)} title="Sync Report">
                 {syncing ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 1rem' }}>
                         <RefreshCw size={48} style={{ animation: 'spin 1s linear infinite', color: 'var(--primary)', marginBottom: '1.5rem' }} />
@@ -376,102 +376,79 @@ export default function Designer() {
                 )}
             </Modal>
 
-            {/* Deletion Confirmation Modal */}
-            <Modal isOpen={activeModal === 'confirmDeletions'} onClose={() => setActiveModal(null)} title="Confirm Deletions" footer={
+            {/* Confirm Deletions Modal */}
+            <Modal isOpen={activeModal === 'confirmDeletions'} onClose={() => { setActiveModal(null); setPendingDeletions([]); }} title="Confirm Cloud Deletions" footer={
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
-                    <button className="btn btn-primary" style={{ backgroundColor: '#ef4444' }} onClick={confirmPush}>Confirm & Delete</button>
+                    <button className="btn btn-secondary" onClick={() => { setActiveModal(null); setPendingDeletions([]); }}>Cancel</button>
+                    <button className="btn btn-primary" style={{ backgroundColor: '#ef4444', borderColor: '#ef4444' }} onClick={confirmPush}>Confirm & Delete from Cloud</button>
                 </div>
             }>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 'var(--radius)', color: '#ef4444' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                            <AlertCircle size={20} />
-                            Warning: Destructive Actions Required
+                    <div style={{ padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 'var(--radius)', color: '#ef4444', display: 'flex', alignItems: 'start', gap: '0.75rem' }}>
+                        <AlertCircle size={20} style={{ marginTop: '2px' }} />
+                        <div>
+                            <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Warning: Permanent Cloud Deletion</div>
+                            <div style={{ fontSize: '0.9rem' }}>
+                                The following resources are no longer in your design and will be <strong>PERMANENTLY DELETED</strong> from the Solace Cloud environment.
+                                <br /><br />
+                                This action cannot be undone.
+                            </div>
                         </div>
-                        <p style={{ fontSize: '0.9rem' }}>
-                            The following existing configurations must be deleted before the new design can be applied.
-                            This is necessary to avoid duplicate configuration errors.
-                        </p>
                     </div>
 
-                    <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #333', borderRadius: 'var(--radius)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                            <thead style={{ backgroundColor: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                                <tr>
-                                    <th style={{ padding: '0.75rem' }}>Type</th>
-                                    <th style={{ padding: '0.75rem' }}>Name</th>
-                                    <th style={{ padding: '0.75rem' }}>Broker</th>
-                                    <th style={{ padding: '0.75rem' }}>Count</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {pendingDeletions.map((item, i) => (
-                                    <React.Fragment key={i}>
-                                        <tr style={{ borderTop: '1px solid #333', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                                            <td style={{ padding: '0.75rem' }}>{item.type}</td>
-                                            <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>{item.name}</td>
-                                            <td style={{ padding: '0.75rem', color: 'var(--muted-foreground)' }}>{item.broker}</td>
-                                            <td style={{ padding: '0.75rem' }}>{item.count}</td>
-                                        </tr>
-                                    </React.Fragment>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {pendingDeletions.map((item, idx) => (
+                            <div key={idx} style={{ padding: '0.75rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', fontSize: '0.9rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                    <span style={{ fontWeight: 'bold' }}>{item.type}: {item.name}</span>
+                                    <span style={{ fontSize: '0.8rem', padding: '0.1rem 0.5rem', borderRadius: '1rem', backgroundColor: 'rgba(255,255,255,0.1)' }}>{item.count} items</span>
+                                </div>
+                                <div style={{ color: 'var(--muted-foreground)', fontSize: '0.8rem' }}>
+                                    Broker: {item.broker}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </Modal>
 
-            {/* Sync Report Modal */}
-            {showSyncModal && syncReport && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '800px', width: '90%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Synchronization Report</h2>
-                            <button className="btn btn-secondary" onClick={() => setShowSyncModal(false)}><XCircle size={24} /></button>
-                        </div>
-
-                        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                            {syncReport.applications.map((app, idx) => (
-                                <div key={idx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', borderLeft: `4px solid ${app.status === 'synced' ? '#10b981' : '#ef4444'}` }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{app.name}</h3>
-                                        <span style={{
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '1rem',
-                                            fontSize: '0.75rem',
-                                            backgroundColor: app.status === 'synced' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                                            color: app.status === 'synced' ? '#10b981' : '#ef4444'
-                                        }}>
-                                            {app.status === 'synced' ? 'Synced' : 'Discrepancies Found'}
-                                        </span>
-                                    </div>
-                                    {app.issues.length > 0 && (
-                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                            {app.issues.map((issue, i) => (
-                                                <li key={i} style={{ padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--muted-foreground)', fontSize: '0.9rem', display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
-                                                    <AlertCircle size={16} style={{ marginTop: '3px', color: '#ef4444' }} />
-                                                    {issue}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                    {app.issues.length === 0 && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontSize: '0.9rem' }}>
-                                            <CheckCircle size={16} />
-                                            Configuration matches Solace Cloud
-                                        </div>
-                                    )}
+            {/* Detailed Sync Report Modal (from Check Sync) */}
+            <Modal isOpen={activeModal === 'detailedSyncReport'} onClose={() => setActiveModal(null)} title="Synchronization Report" maxWidth="800px">
+                <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                    {syncReport?.applications?.map((app, idx) => (
+                        <div key={idx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', borderLeft: `4px solid ${app.status === 'synced' ? '#10b981' : '#ef4444'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{app.name}</h3>
+                                <span style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '1rem',
+                                    fontSize: '0.75rem',
+                                    backgroundColor: app.status === 'synced' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                    color: app.status === 'synced' ? '#10b981' : '#ef4444'
+                                }}>
+                                    {app.status === 'synced' ? 'Synced' : 'Discrepancies Found'}
+                                </span>
+                            </div>
+                            {(app.issues || []).length > 0 && (
+                                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                    {app.issues.map((issue, i) => (
+                                        <li key={i} style={{ padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--muted-foreground)', fontSize: '0.9rem', display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
+                                            <AlertCircle size={16} style={{ marginTop: '3px', color: '#ef4444' }} />
+                                            {issue}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {(app.issues || []).length === 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontSize: '0.9rem' }}>
+                                    <CheckCircle size={16} />
+                                    Configuration matches Solace Cloud
                                 </div>
-                            ))}
+                            )}
                         </div>
-
-                        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                            <button className="btn btn-primary" onClick={() => setShowSyncModal(false)}>Close</button>
-                        </div>
-                    </div>
+                    ))}
                 </div>
-            )}
+            </Modal>
         </Layout>
     );
 }

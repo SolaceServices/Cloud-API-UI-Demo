@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-export default function Modal({ isOpen, onClose, title, children, footer }) {
+export default function Modal({ isOpen, onClose, title, children, footer, width, maxWidth }) {
     if (!isOpen) return null;
 
     return (
@@ -19,8 +19,8 @@ export default function Modal({ isOpen, onClose, title, children, footer }) {
             backdropFilter: 'blur(5px)'
         }}>
             <div className="card glass-panel" style={{
-                width: '100%',
-                maxWidth: '500px',
+                width: width || '100%',
+                maxWidth: maxWidth || '500px',
                 maxHeight: '90vh',
                 overflowY: 'auto',
                 position: 'relative',

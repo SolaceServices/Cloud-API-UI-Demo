@@ -21,19 +21,21 @@ export default function Designer() {
     const [deploying, setDeploying] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [logs, setLogs] = useState([]);
-    const [activeModal, setActiveModal] = useState(null); // 'domain', 'schema', 'event', 'app', 'sync', 'version'
+    const [activeModal, setActiveModal] = useState(null); // 'domain', 'schema', 'event', 'app', 'sync', 'version', 'detailedSyncReport'
     const [formData, setFormData] = useState({});
     const [editingVersionIndex, setEditingVersionIndex] = useState(null); // Track if we are editing a version
     const [syncReport, setSyncReport] = useState(null);
     const [pendingDeletions, setPendingDeletions] = useState([]);
     const [pulling, setPulling] = useState(false);
 
-    const [showSyncModal, setShowSyncModal] = useState(false);
+    // const [showSyncModal, setShowSyncModal] = useState(false); // Removed
     const [checkingSync, setCheckingSync] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null); // For Master-Detail view
     const [statusMap, setStatusMap] = useState({}); // Map of ID -> Status
     const [brokers, setBrokers] = useState([]);
     const [activeView, setActiveView] = useState('design'); // 'design' or 'configurations'
+    const [activeBrokerConfig, setActiveBrokerConfig] = useState(0); // Index of selected broker config
+    const [activeConfigTab, setActiveConfigTab] = useState('eventHandling'); // 'eventHandling' or 'accessControl'
 
     useEffect(() => {
         if (domainId) fetchConfig();
@@ -47,7 +49,32 @@ export default function Designer() {
                     applicationDomains: data.applicationDomains || [],
                     schemas: (data.schemas || []).filter(s => s.domainId === domainId),
                     events: (data.events || []).filter(e => e.domainId === domainId),
-                    applications: (data.applications || []).filter(a => a.domainId === domainId)
+                    applications: (data.applications || []).filter(a => a.domainId === domainId).map(app => {
+                        // Migration: If brokerConfigs is missing but brokerName exists, create it
+                        if (!app.brokerConfigs && app.brokerName) {
+                            app.brokerConfigs = [{
+                                brokerName: app.brokerName,
+                                clientUsername: app.clientUsername,
+                                clientPassword: app.clientPassword,
+                                accessType: app.accessType || 'reference'
+                            }];
+                        }
+                        // Migration: Consumers queueConfig -> queueConfigs
+                        if (app.versions) {
+                            app.versions.forEach(v => {
+                                if (v.consumers) {
+                                    v.consumers.forEach(c => {
+                                        if (!c.queueConfigs && c.queueConfig && app.brokerName) {
+                                            c.queueConfigs = {
+                                                [app.brokerName]: c.queueConfig
+                                            };
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        return app;
+                    })
                 };
                 setConfig(safeData);
                 setLoading(false);
@@ -115,7 +142,7 @@ export default function Designer() {
             });
             const data = await res.json();
             setSyncReport(data);
-            setShowSyncModal(true);
+            setActiveModal('detailedSyncReport');
         } catch (err) {
             console.error(err);
             alert('Failed to check sync status');
@@ -375,7 +402,7 @@ export default function Designer() {
 
     const deleteItem = (type, index, e) => {
         e.stopPropagation();
-        if (!confirm('Are you sure? This will delete the object and all its versions.')) return;
+        if (!confirm('Are you sure? This will delete the object and all its versions.\n\n(Note: This will only delete the resources locally)')) return;
         const newConfig = { ...config };
         newConfig[type].splice(index, 1);
         saveConfig(newConfig);
@@ -383,7 +410,7 @@ export default function Designer() {
     };
 
     const deleteVersion = (versionIndex) => {
-        if (!confirm('Are you sure you want to delete this version?')) return;
+        if (!confirm('Are you sure you want to delete this version?\n\n(Note: This will only delete the resources locally)')) return;
         const newConfig = { ...config };
         const listType = activeTab === 'apps' ? 'applications' : activeTab;
         const itemIndex = newConfig[listType].findIndex(i => i.id === selectedItem.id);
@@ -401,36 +428,79 @@ export default function Designer() {
         setSelectedItem(newConfig[listType][itemIndex]);
     };
 
-    const updateAppBroker = (brokerName) => {
+    const addBrokerConfig = () => {
         const newConfig = { ...config };
         const itemIndex = newConfig.applications.findIndex(i => i.id === selectedItem.id);
-        newConfig.applications[itemIndex].brokerName = brokerName;
+        const app = newConfig.applications[itemIndex];
+
+        if (!app.brokerConfigs) app.brokerConfigs = [];
+        app.brokerConfigs.push({
+            brokerName: '',
+            clientUsername: '',
+            clientPassword: '',
+            accessType: 'reference'
+        });
+
         saveConfig(newConfig);
-        setSelectedItem(newConfig.applications[itemIndex]);
+        setSelectedItem(app);
+        setActiveBrokerConfig(app.brokerConfigs.length - 1);
     };
 
-    const updateAppClientUsername = (clientUsername) => {
+    const removeBrokerConfig = (index, e) => {
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to remove this broker configuration?')) return;
+
         const newConfig = { ...config };
         const itemIndex = newConfig.applications.findIndex(i => i.id === selectedItem.id);
-        newConfig.applications[itemIndex].clientUsername = clientUsername;
+        const app = newConfig.applications[itemIndex];
+
+        app.brokerConfigs.splice(index, 1);
+
         saveConfig(newConfig);
-        setSelectedItem(newConfig.applications[itemIndex]);
+        setSelectedItem(app);
+        setActiveBrokerConfig(Math.max(0, index - 1));
     };
 
-    const updateAppAccessType = (accessType) => {
+    const updateBrokerConfig = (field, value) => {
         const newConfig = { ...config };
         const itemIndex = newConfig.applications.findIndex(i => i.id === selectedItem.id);
-        newConfig.applications[itemIndex].accessType = accessType;
+        const app = newConfig.applications[itemIndex];
+
+        // Ensure array exists
+        if (!app.brokerConfigs) app.brokerConfigs = [];
+        if (!app.brokerConfigs[activeBrokerConfig]) return;
+
+        app.brokerConfigs[activeBrokerConfig][field] = value;
         saveConfig(newConfig);
-        setSelectedItem(newConfig.applications[itemIndex]);
+        setSelectedItem(app);
     };
 
-    const updateAppClientPassword = (clientPassword) => {
+    const updateQueueConfig = (versionIndex, consumerIndex, field, value) => {
         const newConfig = { ...config };
         const itemIndex = newConfig.applications.findIndex(i => i.id === selectedItem.id);
-        newConfig.applications[itemIndex].clientPassword = clientPassword;
+        const app = newConfig.applications[itemIndex];
+        const version = app.versions[versionIndex];
+        const consumer = version.consumers[consumerIndex];
+        const brokerName = app.brokerConfigs[activeBrokerConfig]?.brokerName;
+
+        if (!brokerName) return alert('Please select a broker first');
+
+        if (!consumer.queueConfigs) consumer.queueConfigs = {};
+        if (!consumer.queueConfigs[brokerName]) {
+            // Initialize with defaults or existing legacy config
+            consumer.queueConfigs[brokerName] = {
+                ...(consumer.queueConfig || {
+                    accessType: "exclusive",
+                    maxMsgSpoolUsage: 1500,
+                    permission: "consume",
+                    respectTtlEnabled: true
+                })
+            };
+        }
+
+        consumer.queueConfigs[brokerName][field] = value;
         saveConfig(newConfig);
-        setSelectedItem(newConfig.applications[itemIndex]);
+        setSelectedItem(app);
     };
 
     if (loading) return <Layout><div>Loading...</div></Layout>;
@@ -450,6 +520,14 @@ export default function Designer() {
 
     const getDomainName = (id) => config.applicationDomains.find(d => d.id === id)?.name || 'Unknown';
     const currentDomainName = getDomainName(domainId);
+
+    const getEventDetails = (evId) => {
+        for (const evt of config.events) {
+            const ver = evt.versions.find(v => v.id === evId);
+            if (ver) return { name: evt.name, version: ver.version };
+        }
+        return { name: 'Unknown Event', version: '?' };
+    };
 
     return (
         <Layout>
@@ -630,104 +708,223 @@ export default function Designer() {
                         {activeView === 'configurations' && activeTab === 'apps' ? (
                             <div>
                                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem' }}>Configure for Event Brokers</h3>
-                                <div style={{ marginBottom: '2rem' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Target Broker</label>
-                                    <select
-                                        className="input"
-                                        value={selectedItem.brokerName || ''}
-                                        onChange={(e) => updateAppBroker(e.target.value)}
-                                    >
-                                        <option value="">Select a Broker...</option>
-                                        {brokers.map(b => (
-                                            <option key={b.id} value={b.name}>{b.name} ({b.serviceId || b.id})</option>
-                                        ))}
-                                    </select>
-                                    <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginTop: '0.5rem' }}>
-                                        Select the broker where this application's queues will be configured.
-                                    </p>
-                                </div>
 
+                                {/* Broker Cards List */}
                                 <div style={{ marginBottom: '2rem' }}>
-                                    <h4 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--primary)' }}>Define Access Control</h4>
-
-                                    <div style={{ marginBottom: '1rem' }}>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Access Type <span style={{ color: 'red' }}>*</span></label>
-                                        <select
-                                            className="input"
-                                            value={selectedItem.accessType || 'reference'}
-                                            onChange={(e) => updateAppAccessType(e.target.value)}
-                                        >
-                                            <option value="reference">Reference Existing Client Username</option>
-                                            <option value="basic">Basic (Create/Update Client Username & Password)</option>
-                                        </select>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                        <label style={{ display: 'block' }}>Event brokers with configurations created</label>
+                                        <button className="btn btn-sm btn-secondary" onClick={addBrokerConfig}><Plus size={14} style={{ marginRight: '0.25rem' }} /> Add Configuration</button>
                                     </div>
 
-                                    <div style={{ marginBottom: '1rem' }}>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Client Username <span style={{ color: 'red' }}>*</span></label>
-                                        <input
-                                            type="text"
-                                            className="input"
-                                            value={selectedItem.clientUsername || ''}
-                                            onChange={(e) => updateAppClientUsername(e.target.value)}
-                                            placeholder="e.g., my-client-username"
-                                        />
-                                    </div>
-
-                                    {selectedItem.accessType === 'basic' && (
-                                        <div>
-                                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password <span style={{ color: 'red' }}>*</span></label>
-                                            <input
-                                                type="password"
-                                                className="input"
-                                                value={selectedItem.clientPassword || ''}
-                                                onChange={(e) => updateAppClientPassword(e.target.value)}
-                                                placeholder="Enter password"
-                                            />
-                                        </div>
-                                    )}
-
-                                    <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginTop: '0.5rem' }}>
-                                        {selectedItem.accessType === 'basic'
-                                            ? "This will create or update the client username with the specified password on the broker."
-                                            : "The referenced client username must already exist on the event broker."}
-                                    </p>
-                                </div>
-
-                                {selectedItem.brokerName && (
-                                    <div>
-                                        <h4 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--primary)' }}>Queue Configurations</h4>
-                                        {selectedItem.versions.map((v, idx) => (
-                                            <div key={v.id} style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                                    <span style={{ fontWeight: 'bold' }}>v{v.version}</span>
-                                                    <button className="btn btn-sm btn-secondary" onClick={() => manageConsumers(v, idx)}>
-                                                        <Edit size={14} style={{ marginRight: '0.5rem' }} />
-                                                        Manage Queues
-                                                    </button>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                                        {(selectedItem.brokerConfigs || []).map((bc, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => setActiveBrokerConfig(idx)}
+                                                style={{
+                                                    padding: '1rem',
+                                                    border: activeBrokerConfig === idx ? '2px solid var(--primary)' : '1px solid #333',
+                                                    borderRadius: 'var(--radius)',
+                                                    backgroundColor: activeBrokerConfig === idx ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.2)',
+                                                    cursor: 'pointer',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                    <Layers size={16} />
+                                                    <span style={{ fontWeight: 'bold' }}>{bc.brokerName || 'Select Broker'}</span>
                                                 </div>
-                                                {v.consumers && v.consumers.length > 0 ? (
-                                                    <div style={{ display: 'grid', gap: '0.5rem' }}>
-                                                        {v.consumers.map((c, cIdx) => (
-                                                            <div key={cIdx} style={{ fontSize: '0.875rem', padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
-                                                                <div style={{ fontWeight: 'bold' }}>{c.name}</div>
-                                                                <div style={{ color: 'var(--muted-foreground)' }}>
-                                                                    Access: {c.queueConfig?.accessType || 'exclusive'} |
-                                                                    Spool: {c.queueConfig?.maxMsgSpoolUsage || 1500}MB |
-                                                                    Perm: {c.queueConfig?.permission || 'consume'}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>No consumers defined.</div>
-                                                )}
+                                                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
+                                                    {bc.accessType === 'basic' ? 'Basic Auth' : 'Reference'}
+                                                </div>
+                                                <button
+                                                    onClick={(e) => removeBrokerConfig(idx, e)}
+                                                    style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                                >
+                                                    <XCircle size={16} />
+                                                </button>
                                             </div>
                                         ))}
+                                        {(!selectedItem.brokerConfigs || selectedItem.brokerConfigs.length === 0) && (
+                                            <div style={{ padding: '1rem', border: '1px dashed #333', borderRadius: 'var(--radius)', color: 'var(--muted-foreground)', textAlign: 'center' }}>
+                                                No configurations yet.
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
+
+                                {selectedItem.brokerConfigs && selectedItem.brokerConfigs[activeBrokerConfig] && (
+                                    <>
+                                        <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid #333', display: 'flex', gap: '1rem' }}>
+                                            <button
+                                                onClick={() => setActiveConfigTab('eventHandling')}
+                                                style={{
+                                                    padding: '0.5rem 0',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    borderBottom: activeConfigTab === 'eventHandling' ? '2px solid var(--primary)' : '2px solid transparent',
+                                                    color: activeConfigTab === 'eventHandling' ? 'var(--primary)' : 'var(--muted-foreground)',
+                                                    fontWeight: 'bold',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Define Event Handling
+                                            </button>
+                                            <button
+                                                onClick={() => setActiveConfigTab('accessControl')}
+                                                style={{
+                                                    padding: '0.5rem 0',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    borderBottom: activeConfigTab === 'accessControl' ? '2px solid var(--primary)' : '2px solid transparent',
+                                                    color: activeConfigTab === 'accessControl' ? 'var(--primary)' : 'var(--muted-foreground)',
+                                                    fontWeight: 'bold',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Define Access Control
+                                            </button>
+                                        </div>
+
+                                        {activeConfigTab === 'accessControl' && (
+                                            <div style={{ marginBottom: '2rem' }}>
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Target Broker</label>
+                                                    <select
+                                                        className="input"
+                                                        value={selectedItem.brokerConfigs[activeBrokerConfig].brokerName || ''}
+                                                        onChange={(e) => updateBrokerConfig('brokerName', e.target.value)}
+                                                    >
+                                                        <option value="">Select a Broker...</option>
+                                                        {brokers.map(b => (
+                                                            <option key={b.id} value={b.name}>{b.name} ({b.serviceId || b.id})</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Access Type <span style={{ color: 'red' }}>*</span></label>
+                                                    <select
+                                                        className="input"
+                                                        value={selectedItem.brokerConfigs[activeBrokerConfig].accessType || 'reference'}
+                                                        onChange={(e) => updateBrokerConfig('accessType', e.target.value)}
+                                                    >
+                                                        <option value="reference">Reference Existing Client Username</option>
+                                                        <option value="basic">Basic (Create/Update Client Username & Password)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Client Username <span style={{ color: 'red' }}>*</span></label>
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        value={selectedItem.brokerConfigs[activeBrokerConfig].clientUsername || ''}
+                                                        onChange={(e) => updateBrokerConfig('clientUsername', e.target.value)}
+                                                        placeholder="e.g., my-client-username"
+                                                    />
+                                                </div>
+
+                                                {selectedItem.brokerConfigs[activeBrokerConfig].accessType === 'basic' && (
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password <span style={{ color: 'red' }}>*</span></label>
+                                                        <input
+                                                            type="password"
+                                                            className="input"
+                                                            value={selectedItem.brokerConfigs[activeBrokerConfig].clientPassword || ''}
+                                                            onChange={(e) => updateBrokerConfig('clientPassword', e.target.value)}
+                                                            placeholder="Enter password"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {activeConfigTab === 'eventHandling' && (
+                                            <div>
+                                                {selectedItem.versions.map((v, vIdx) => (
+                                                    <div key={v.id} style={{ marginBottom: '2rem' }}>
+                                                        <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Version {v.version}</h4>
+                                                        {v.consumers && v.consumers.length > 0 ? v.consumers.map((c, cIdx) => {
+                                                            const brokerName = selectedItem.brokerConfigs[activeBrokerConfig].brokerName;
+                                                            // Resolve queue config: specific -> legacy -> default
+                                                            const qConfig = (c.queueConfigs && c.queueConfigs[brokerName]) || c.queueConfig || {
+                                                                accessType: "exclusive",
+                                                                maxMsgSpoolUsage: 1500,
+                                                                permission: "consume",
+                                                                respectTtlEnabled: true
+                                                            };
+
+                                                            return (
+                                                                <div key={cIdx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius)' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                                                        <Layers size={16} />
+                                                                        <span style={{ fontWeight: 'bold' }}>{c.name}</span>
+                                                                        <span style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>({c.type})</span>
+                                                                    </div>
+
+                                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                                        <div>
+                                                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Access Type</label>
+                                                                            <select
+                                                                                className="input"
+                                                                                style={{ fontSize: '0.875rem', padding: '0.4rem' }}
+                                                                                value={qConfig.accessType}
+                                                                                onChange={(e) => updateQueueConfig(vIdx, cIdx, 'accessType', e.target.value)}
+                                                                            >
+                                                                                <option value="exclusive">Exclusive</option>
+                                                                                <option value="non-exclusive">Non-Exclusive</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <div>
+                                                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Max Spool (MB)</label>
+                                                                            <input
+                                                                                type="number"
+                                                                                className="input"
+                                                                                style={{ fontSize: '0.875rem', padding: '0.4rem' }}
+                                                                                value={qConfig.maxMsgSpoolUsage}
+                                                                                onChange={(e) => updateQueueConfig(vIdx, cIdx, 'maxMsgSpoolUsage', parseInt(e.target.value))}
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Permission</label>
+                                                                            <select
+                                                                                className="input"
+                                                                                style={{ fontSize: '0.875rem', padding: '0.4rem' }}
+                                                                                value={qConfig.permission}
+                                                                                onChange={(e) => updateQueueConfig(vIdx, cIdx, 'permission', e.target.value)}
+                                                                            >
+                                                                                <option value="consume">Consume</option>
+                                                                                <option value="read-only">Read Only</option>
+                                                                                <option value="no-access">No Access</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <div>
+                                                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Max TTL (sec)</label>
+                                                                            <input
+                                                                                type="number"
+                                                                                className="input"
+                                                                                style={{ fontSize: '0.875rem', padding: '0.4rem' }}
+                                                                                value={qConfig.maxTtl || 0}
+                                                                                onChange={(e) => updateQueueConfig(vIdx, cIdx, 'maxTtl', parseInt(e.target.value))}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }) : (
+                                                            <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>No consumers defined for this version.</div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         ) : (
-                            <>
+                            // Design View (Existing Logic)
+                            <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Versions</h3>
                                     <button className="btn btn-sm btn-primary" onClick={() => openModal('version', {
@@ -756,61 +953,82 @@ export default function Designer() {
                                                     </span>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <select
-                                                        className="input"
-                                                        style={{ padding: '0.25rem', fontSize: '0.875rem', width: 'auto' }}
-                                                        value={v.stateId || "1"}
-                                                        onChange={(e) => updateVersionState(idx, e.target.value)}
-                                                    >
-                                                        {Object.entries(STATES).map(([id, s]) => (
-                                                            <option key={id} value={id}>{s.label}</option>
-                                                        ))}
-                                                    </select>
-
-                                                    <button
-                                                        className="btn btn-sm btn-secondary"
-                                                        onClick={() => editVersion(v, idx)}
-                                                        title="Edit Version Details"
-                                                    >
-                                                        <Edit size={14} style={{ marginRight: '0.25rem' }} /> Edit
+                                                    <button className="btn btn-sm btn-secondary" onClick={() => editVersion(v, idx)}>
+                                                        <Edit size={14} style={{ marginRight: '0.5rem' }} />
+                                                        Edit Version
                                                     </button>
-
-                                                    {activeTab === 'apps' && (
-                                                        <button
-                                                            className="btn btn-sm btn-secondary"
-                                                            onClick={() => manageConsumers(v, idx)}
-                                                            title="Manage Consumers & Queues"
-                                                        >
-                                                            <Layers size={14} style={{ marginRight: '0.25rem' }} /> Queues
-                                                        </button>
-                                                    )}
-
-                                                    <button
-                                                        className="btn btn-sm btn-secondary"
-                                                        onClick={() => deleteVersion(idx)}
-                                                        style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                                                        title="Delete Version"
-                                                    >
+                                                    <button className="btn btn-sm btn-secondary" onClick={() => manageConsumers(v, idx)}>
+                                                        <Layers size={14} style={{ marginRight: '0.5rem' }} />
+                                                        Manage Consumers
+                                                    </button>
+                                                    <button className="btn btn-sm btn-secondary" onClick={() => deleteVersion(idx)} style={{ color: '#ef4444' }}>
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {/* Version Details */}
-                                            <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', display: 'grid', gap: '0.25rem' }}>
-                                                <div>ID: {v.solaceId || 'Not Deployed'}</div>
-                                                {v.topic && <div>Topic: {v.topic}</div>}
-                                                {v.schemaVersionId && <div>Schema Ver ID: {v.schemaVersionId}</div>}
-                                                {v.consumedEventVersionIds?.length > 0 && <div>Consumes: {v.consumedEventVersionIds.length} Events</div>}
-                                            </div>
+                                            {/* Published Events */}
+                                            {v.producedEventVersionIds && v.producedEventVersionIds.length > 0 && (
+                                                <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+                                                    <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#10b981', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Published Events</div>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                        {v.producedEventVersionIds.map(evId => {
+                                                            const evt = getEventDetails(evId);
+                                                            return (
+                                                                <span key={evId} style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                    <span style={{ fontWeight: '500' }}>{evt.name}</span>
+                                                                    <span style={{ fontSize: '0.7rem', opacity: 0.7, backgroundColor: 'rgba(255,255,255,0.1)', padding: '0 0.2rem', borderRadius: '2px' }}>v{evt.version}</span>
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Subscribed Events */}
+                                            {v.consumedEventVersionIds && v.consumedEventVersionIds.length > 0 && (
+                                                <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'rgba(59, 130, 246, 0.05)', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                                                    <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#60a5fa', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subscribed Events</div>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                        {v.consumedEventVersionIds.map(evId => {
+                                                            const evt = getEventDetails(evId);
+                                                            return (
+                                                                <span key={evId} style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                    <span style={{ fontWeight: '500' }}>{evt.name}</span>
+                                                                    <span style={{ fontSize: '0.7rem', opacity: 0.7, backgroundColor: 'rgba(255,255,255,0.1)', padding: '0 0.2rem', borderRadius: '2px' }}>v{evt.version}</span>
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Consumers Summary */}
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--muted-foreground)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>CONSUMERS</div>
+                                            {v.consumers && v.consumers.length > 0 ? (
+                                                <div style={{ display: 'grid', gap: '0.5rem' }}>
+                                                    {v.consumers.map((c, cIdx) => (
+                                                        <div key={cIdx} style={{ fontSize: '0.875rem', padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
+                                                            <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <Layers size={14} /> {c.name}
+                                                            </div>
+                                                            <div style={{ color: 'var(--muted-foreground)', fontSize: '0.8rem', marginLeft: '1.4rem' }}>
+                                                                Type: {c.type}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', fontStyle: 'italic' }}>No consumers defined.</div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
-                            </>
+                            </div>
                         )}
-                    </div>
+                    </div >
                 )}
-            </div>
+            </div >
 
             {/* --- MODALS --- */}
 
@@ -1223,8 +1441,8 @@ export default function Designer() {
                 </div>
             </Modal>
 
-            {/* Sync Modal */}
-            <Modal isOpen={activeModal === 'sync'} onClose={() => setActiveModal(null)} title="Sync Report">
+            {/* Sync Report Modal (Shared for Sync and Check Sync) */}
+            <Modal isOpen={activeModal === 'sync' || activeModal === 'syncReport'} onClose={() => setActiveModal(null)} title="Sync Report">
                 {syncing ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 1rem' }}>
                         <RefreshCw size={48} style={{ animation: 'spin 1s linear infinite', color: 'var(--primary)', marginBottom: '1.5rem' }} />
@@ -1253,120 +1471,44 @@ export default function Designer() {
                     )
                 )}
             </Modal>
-            {/* Deletion Confirmation Modal */}
-            <Modal isOpen={activeModal === 'confirmDeletions'} onClose={() => setActiveModal(null)} title="Confirm Deletions" footer={
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
-                    <button className="btn btn-primary" style={{ backgroundColor: '#ef4444' }} onClick={confirmPush}>Confirm & Delete</button>
-                </div>
-            }>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 'var(--radius)', color: '#ef4444' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                            <AlertCircle size={20} />
-                            Warning: Destructive Actions Required
-                        </div>
-                        <p style={{ fontSize: '0.9rem' }}>
-                            The following existing configurations must be deleted before the new design can be applied.
-                            This is necessary to avoid duplicate configuration errors.
-                        </p>
-                    </div>
 
-                    <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #333', borderRadius: 'var(--radius)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                            <thead style={{ backgroundColor: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                                <tr>
-                                    <th style={{ padding: '0.75rem' }}>Type</th>
-                                    <th style={{ padding: '0.75rem' }}>Name</th>
-                                    <th style={{ padding: '0.75rem' }}>Broker</th>
-                                    <th style={{ padding: '0.75rem' }}>Count</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {pendingDeletions.map((item, i) => (
-                                    <React.Fragment key={i}>
-                                        <tr style={{ borderTop: '1px solid #333', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                                            <td style={{ padding: '0.75rem' }}>{item.type}</td>
-                                            <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>{item.name}</td>
-                                            <td style={{ padding: '0.75rem', color: 'var(--muted-foreground)' }}>{item.broker}</td>
-                                            <td style={{ padding: '0.75rem' }}>{item.count}</td>
-                                        </tr>
-                                        {item.operations && item.operations.length > 0 && (
-                                            <tr>
-                                                <td colSpan={4} style={{ padding: '0 0.75rem 0.75rem 0.75rem', fontSize: '0.8rem' }}>
-                                                    <details>
-                                                        <summary style={{ cursor: 'pointer', color: 'var(--primary)', marginBottom: '0.25rem' }}>View API Operations</summary>
-                                                        <div style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '4px', fontFamily: 'monospace' }}>
-                                                            {item.operations.map((op, opIdx) => (
-                                                                <div key={opIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                                                                    <span style={{ color: '#ef4444', fontWeight: 'bold' }}>{op.method}</span>
-                                                                    <span style={{ color: '#aaa', wordBreak: 'break-all' }}>{op.url}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </details>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </React.Fragment>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+            {/* Detailed Sync Report Modal (from Check Sync) */}
+            <Modal isOpen={activeModal === 'detailedSyncReport'} onClose={() => setActiveModal(null)} title="Synchronization Report" maxWidth="800px">
+                <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                    {syncReport?.applications?.map((app, idx) => (
+                        <div key={idx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', borderLeft: `4px solid ${app.status === 'synced' ? '#10b981' : '#ef4444'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{app.name}</h3>
+                                <span style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '1rem',
+                                    fontSize: '0.75rem',
+                                    backgroundColor: app.status === 'synced' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                    color: app.status === 'synced' ? '#10b981' : '#ef4444'
+                                }}>
+                                    {app.status === 'synced' ? 'Synced' : 'Discrepancies Found'}
+                                </span>
+                            </div>
+                            {(app.issues || []).length > 0 && (
+                                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                    {app.issues.map((issue, i) => (
+                                        <li key={i} style={{ padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--muted-foreground)', fontSize: '0.9rem', display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
+                                            <AlertCircle size={16} style={{ marginTop: '3px', color: '#ef4444' }} />
+                                            {issue}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {(app.issues || []).length === 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontSize: '0.9rem' }}>
+                                    <CheckCircle size={16} />
+                                    Configuration matches Solace Cloud
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </Modal>
-
-
-            {/* Sync Report Modal */}
-            {showSyncModal && syncReport && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '800px', width: '90%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Synchronization Report</h2>
-                            <button className="btn btn-secondary" onClick={() => setShowSyncModal(false)}><XCircle size={24} /></button>
-                        </div>
-
-                        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                            {syncReport.applications.map((app, idx) => (
-                                <div key={idx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', borderLeft: `4px solid ${app.status === 'synced' ? '#10b981' : '#ef4444'}` }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{app.name}</h3>
-                                        <span style={{
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '1rem',
-                                            fontSize: '0.75rem',
-                                            backgroundColor: app.status === 'synced' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                                            color: app.status === 'synced' ? '#10b981' : '#ef4444'
-                                        }}>
-                                            {app.status === 'synced' ? 'Synced' : 'Discrepancies Found'}
-                                        </span>
-                                    </div>
-                                    {app.issues.length > 0 && (
-                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                            {app.issues.map((issue, i) => (
-                                                <li key={i} style={{ padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--muted-foreground)', fontSize: '0.9rem', display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
-                                                    <AlertCircle size={16} style={{ marginTop: '3px', color: '#ef4444' }} />
-                                                    {issue}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                    {app.issues.length === 0 && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontSize: '0.9rem' }}>
-                                            <CheckCircle size={16} />
-                                            Configuration matches Solace Cloud
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                            <button className="btn btn-primary" onClick={() => setShowSyncModal(false)}>Close</button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </Layout >
     );
 }
