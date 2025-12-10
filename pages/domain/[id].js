@@ -757,7 +757,7 @@ export default function Designer() {
                                                         </button>
                                                     </div>
 
-                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '1rem' }}>
                                                         <div>
                                                             <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Target Broker</label>
                                                             <select
@@ -770,18 +770,6 @@ export default function Designer() {
                                                                 {brokers.map(b => (
                                                                     <option key={b.id} value={b.name}>{b.name}{b.serviceId ? ` (${b.serviceId})` : ''}</option>
                                                                 ))}
-                                                            </select>
-                                                        </div>
-                                                        <div>
-                                                            <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Access Type</label>
-                                                            <select
-                                                                className="input"
-                                                                style={{ width: '100%', padding: '0.3rem' }}
-                                                                value={selectedItem.brokerConfigs[activeBrokerConfig].accessType || 'reference'}
-                                                                onChange={e => updateBrokerConfig('accessType', e.target.value)}
-                                                            >
-                                                                <option value="reference">Reference (Shared)</option>
-                                                                <option value="owner">Owner (Managed)</option>
                                                             </select>
                                                         </div>
                                                     </div>

@@ -232,11 +232,8 @@ export default async function handler(req, res) {
 
                             const existingConfig = localApp.brokerConfigs.find(bc => bc.brokerName === brokerName || (ctxId && bc.brokerContextId === ctxId));
                             // Check if configVal has accessType or we can infer it
-                            const importedAccessType = configVal.accessType || "reference";
-
                             if (existingConfig) {
                                 existingConfig.clientUsername = configVal.clientUsername;
-                                existingConfig.accessType = importedAccessType;
                                 if (ctxId) existingConfig.brokerContextId = ctxId;
                                 if (brokerName !== "Imported Broker" && existingConfig.brokerName === "Imported Broker") {
                                     existingConfig.brokerName = brokerName;
@@ -246,8 +243,7 @@ export default async function handler(req, res) {
                                     brokerName: brokerName,
                                     brokerContextId: ctxId,
                                     clientUsername: configVal.clientUsername,
-                                    clientPassword: "",
-                                    accessType: importedAccessType
+                                    clientPassword: ""
                                 });
                             }
                         }
