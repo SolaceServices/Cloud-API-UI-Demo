@@ -710,6 +710,113 @@ export default function Designer() {
 
                         {activeView === 'configurations' && activeTab === 'apps' ? (
                             <div style={{ padding: '0 1rem' }}>
+                                {/* Broker Configuration Management (Application Level) */}
+                                <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Broker Configurations</h3>
+                                        <button className="btn btn-sm btn-secondary" onClick={addBrokerConfig}>
+                                            <Plus size={16} style={{ marginRight: '0.25rem' }} /> Add Broker
+                                        </button>
+                                    </div>
+
+                                    {!selectedItem.brokerConfigs || selectedItem.brokerConfigs.length === 0 ? (
+                                        <div style={{ padding: '2rem', color: 'var(--muted-foreground)', border: '1px dashed var(--border)', borderRadius: 'var(--radius)', textAlign: 'center' }}>
+                                            <AlertCircle size={24} style={{ marginBottom: '0.5rem', display: 'block', margin: '0 auto 0.5rem' }} />
+                                            No brokers configured. Click "Add Broker" to configure a connection.
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            {/* Tab Navigation for Brokers */}
+                                            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border)' }}>
+                                                {selectedItem.brokerConfigs.map((bc, bIdx) => (
+                                                    <button
+                                                        key={bIdx}
+                                                        onClick={() => setActiveBrokerConfig(bIdx)}
+                                                        style={{
+                                                            padding: '0.5rem 1rem',
+                                                            background: activeBrokerConfig === bIdx ? 'var(--primary)' : 'transparent',
+                                                            color: activeBrokerConfig === bIdx ? '#fff' : 'var(--muted-foreground)',
+                                                            border: 'none',
+                                                            borderRadius: '4px 4px 0 0',
+                                                            cursor: 'pointer',
+                                                            borderBottom: activeBrokerConfig === bIdx ? '2px solid white' : 'none'
+                                                        }}
+                                                    >
+                                                        {bc.brokerName || `Config ${bIdx + 1}`}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Active Broker Parameters */}
+                                            {selectedItem.brokerConfigs[activeBrokerConfig] && (
+                                                <div style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                        <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Configuration Details</h4>
+                                                        <button onClick={(e) => removeBrokerConfig(activeBrokerConfig, e)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                            <Trash2 size={14} /> Remove
+                                                        </button>
+                                                    </div>
+
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                                        <div>
+                                                            <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Target Broker</label>
+                                                            <select
+                                                                className="input"
+                                                                style={{ width: '100%', padding: '0.3rem' }}
+                                                                value={selectedItem.brokerConfigs[activeBrokerConfig].brokerName || ''}
+                                                                onChange={e => updateBrokerConfig('brokerName', e.target.value)}
+                                                            >
+                                                                <option value="">Select Broker</option>
+                                                                {brokers.map(b => (
+                                                                    <option key={b.id} value={b.name}>{b.name}{b.serviceId ? ` (${b.serviceId})` : ''}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Access Type</label>
+                                                            <select
+                                                                className="input"
+                                                                style={{ width: '100%', padding: '0.3rem' }}
+                                                                value={selectedItem.brokerConfigs[activeBrokerConfig].accessType || 'reference'}
+                                                                onChange={e => updateBrokerConfig('accessType', e.target.value)}
+                                                            >
+                                                                <option value="reference">Reference (Shared)</option>
+                                                                <option value="owner">Owner (Managed)</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                        <div>
+                                                            <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Client Username</label>
+                                                            <input
+                                                                type="text"
+                                                                className="input"
+                                                                style={{ fontSize: '0.85rem', padding: '0.3rem', width: '100%' }}
+                                                                value={selectedItem.brokerConfigs[activeBrokerConfig].clientUsername || ''}
+                                                                onChange={e => updateBrokerConfig('clientUsername', e.target.value)}
+                                                                placeholder="Solace Client Username"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Client Password</label>
+                                                            <input
+                                                                type="password"
+                                                                className="input"
+                                                                style={{ fontSize: '0.85rem', padding: '0.3rem', width: '100%' }}
+                                                                value={selectedItem.brokerConfigs[activeBrokerConfig].clientPassword || ''}
+                                                                onChange={e => updateBrokerConfig('clientPassword', e.target.value)}
+                                                                placeholder="Password (Optional)"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+
                                 {/* Version Selector */}
                                 <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Select Version to Configure</label>
@@ -728,74 +835,19 @@ export default function Designer() {
                                     </select>
                                 </div>
 
-                                {/* Configurations Table */}
+                                {/* Consumer Configurations Header (Start of List) */}
                                 <div>
-                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>Consumer Configurations</h3>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>Consumer Configuration Overrides</h3>
 
                                     {(!selectedItem.brokerConfigs || selectedItem.brokerConfigs.length === 0) && (
-                                        <div style={{ padding: '1rem', color: '#f59e0b', border: '1px solid #f59e0b', borderRadius: 'var(--radius)', marginBottom: '1rem' }}>
-                                            <AlertCircle size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
-                                            No brokers defined. Go to Design Details and add a broker configuration first.
+                                        <div style={{ padding: '1rem', fontStyle: 'italic', color: 'var(--muted-foreground)' }}>
+                                            Add a broker configuration above to configure queue settings.
                                         </div>
                                     )}
 
                                     {selectedItem.brokerConfigs && selectedItem.brokerConfigs.length > 0 && (
                                         <div>
-                                            {/* Broker Tabs */}
-                                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-                                                {selectedItem.brokerConfigs.map((bc, bIdx) => (
-                                                    <button
-                                                        key={bIdx}
-                                                        onClick={() => setActiveBrokerConfig(bIdx)}
-                                                        style={{
-                                                            padding: '0.5rem 1rem',
-                                                            background: activeBrokerConfig === bIdx ? 'var(--primary)' : 'transparent',
-                                                            color: activeBrokerConfig === bIdx ? '#fff' : 'var(--muted-foreground)',
-                                                            border: 'none',
-                                                            borderRadius: '4px 4px 0 0',
-                                                            cursor: 'pointer'
-                                                        }}
-                                                    >
-                                                        {bc.brokerName || `Broker ${bIdx + 1}`}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            {/* Broker Settings Form */}
-                                            <div style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                                    <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Broker Connection Settings</h4>
-                                                    <button onClick={(e) => removeBrokerConfig(activeBrokerConfig, e)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                                        <Trash2 size={14} /> Remove Config
-                                                    </button>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                                    <div>
-                                                        <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Client Username</label>
-                                                        <input
-                                                            type="text"
-                                                            className="input"
-                                                            style={{ fontSize: '0.85rem', padding: '0.3rem', width: '100%' }}
-                                                            value={selectedItem.brokerConfigs[activeBrokerConfig].clientUsername || ''}
-                                                            onChange={e => updateBrokerConfig('clientUsername', e.target.value)}
-                                                            placeholder="Solace Client Username"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Client Password</label>
-                                                        <input
-                                                            type="password"
-                                                            className="input"
-                                                            style={{ fontSize: '0.85rem', padding: '0.3rem', width: '100%' }}
-                                                            value={selectedItem.brokerConfigs[activeBrokerConfig].clientPassword || ''}
-                                                            onChange={e => updateBrokerConfig('clientPassword', e.target.value)}
-                                                            placeholder="Password (Optional)"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Configs for Active Broker */}
+                                            {/* Configs for Active Broker (Queue Settings Only) */}
                                             {selectedItem.versions[selectedVersionIndex]?.consumers?.map((consumer, cIdx) => {
                                                 const activeConfig = selectedItem.brokerConfigs[activeBrokerConfig];
                                                 // Use ID if available, valid fallback to Name for legacy/imported

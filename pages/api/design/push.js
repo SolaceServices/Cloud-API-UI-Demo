@@ -534,6 +534,63 @@ export default async function handler(req, res) {
                 }
 
                 // (Client Username logic moved outside version loop)
+                // 5. Client Username Configuration (Application Level)
+                if (app.solaceId && brokerConfigs.length > 0) {
+                    for (const brokerConfig of brokerConfigs) {
+                        const appBroker = brokers.data.find(b => b.name === brokerConfig.brokerName);
+                        if (!appBroker) {
+                            log(`Warning: Broker '${brokerConfig.brokerName}' not found. Skipping client username config.`);
+                            continue;
+                        }
+                        const appContextId = appBroker.id;
+
+                        if (!brokerConfig.clientUsername || !brokerConfig.clientPassword) {
+                            log(`Warning: Missing username or password for ${app.name} on ${brokerConfig.brokerName}. Skipping Client Username config (Required fields).`);
+                            continue;
+                        }
+
+                        const clientPayload = {
+                            entityId: app.solaceId, // Application ID
+                            entityType: "application",
+                            contextId: appContextId, // Broker ID
+                            contextType: "EVENT_BROKER",
+                            configurationTypeId: "solaceClientUsername",
+                            value: {
+                                clientUsername: brokerConfig.clientUsername,
+                                password: brokerConfig.clientPassword
+                            }
+                        };
+                        try {
+                            // Check existence
+                            const query = `?entityIds=${app.solaceId}&eventBrokerIds=${appContextId}`;
+                            const existingConfigs = await solaceApiCallAll(`${ENDPOINTS.CONFIG_CLIENT_USERNAMES}${query}`, token);
+
+                            if (existingConfigs.data && existingConfigs.data.length > 0) {
+                                const existingConf = existingConfigs.data[0];
+
+                                // Check if update is needed (simple equality check)
+                                if (existingConf.value &&
+                                    existingConf.value.clientUsername === clientPayload.value.clientUsername &&
+                                    existingConf.value.password === clientPayload.value.password) {
+                                    log(`Client Username config for ${app.name} on ${brokerConfig.brokerName} is up to date.`);
+                                } else {
+                                    log(`Updating Client Username for ${app.name}: Replacing old config...`);
+                                    await solaceApiCall('DELETE', `${ENDPOINTS.CONFIG_CLIENT_USERNAMES}/${existingConf.id}`, null, token);
+                                    await solaceApiCall('POST', ENDPOINTS.CONFIG_CLIENT_USERNAMES, clientPayload, token);
+                                    log(`Updated Client Username Config for ${app.name}`);
+                                }
+                            } else {
+                                // Create
+                                await solaceApiCall('POST', ENDPOINTS.CONFIG_CLIENT_USERNAMES, clientPayload, token);
+                                log(`Created Client Username Config for ${app.name} on ${brokerConfig.brokerName}`);
+                            }
+
+                        } catch (e) {
+                            log(`Error configuring Client Username for ${app.name}: ${e.message}`);
+                            errorCount++;
+                        }
+                    }
+                }
 
                 // 5. Consumers & Queues
                 if (versionId && consumers.length > 0) {
