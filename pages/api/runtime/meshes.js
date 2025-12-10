@@ -12,25 +12,10 @@ export default async function handler(req, res) {
     try {
         const meshes = await solaceApiCallAll('/architecture/eventMeshes', token);
 
-        // Fetch actual running services from Mission Control
-        let services = { data: [] };
-        try {
-            services = await solaceApiCallAll('/missionControl/eventBrokerServices', token);
-            console.log('Fetched services:', services.data.length);
-        } catch (e) {
-            console.error('Failed to fetch services:', e.message);
-        }
-
-        const data = meshes.data.map(mesh => {
-            // Find services that belong to this mesh
-            // The relationship might be via eventMeshId or similar field in the service
-            const meshServices = services.data.filter(s => s.eventMeshId === mesh.id);
-
-            return {
-                ...mesh,
-                brokers: meshServices
-            };
-        });
+        const data = meshes.data.map(mesh => ({
+            ...mesh,
+            brokers: [] // No longer fetching connected services
+        }));
 
         res.status(200).json(data);
     } catch (error) {

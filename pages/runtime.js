@@ -16,7 +16,7 @@ export default function Runtime() {
     const [selectedVersion, setSelectedVersion] = useState(null);
     const [formData, setFormData] = useState({});
     const [selectedMesh, setSelectedMesh] = useState('');
-    const [debugData, setDebugData] = useState(null);
+
 
     useEffect(() => {
         fetchEnvironments();
@@ -263,34 +263,8 @@ export default function Runtime() {
                     <Server size={24} style={{ color: 'var(--primary)' }} />
                     <div>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{currentMesh ? currentMesh.name : 'No Mesh Found'}</h3>
-                        <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
-                            {currentMesh?.brokers?.length || 0} Connected Brokers
-                        </p>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                            <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }} onClick={fetchMeshes}>Refresh Meshes</button>
-                            <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }} onClick={async () => {
-                                const token = localStorage.getItem('solace_token');
-                                const res = await fetch('/api/debug_app', { headers: { Authorization: `Bearer ${token}` } });
-                                const data = await res.json();
-                                setDebugData(JSON.stringify(data, null, 2));
-                            }}>Debug App</button>
-                        </div>
-                        {debugData && (
-                            <div style={{ marginTop: '1rem', background: '#1e1e1e', borderRadius: '4px', overflow: 'hidden' }}>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                                    <button
-                                        className="btn btn-secondary"
-                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                                        onClick={() => navigator.clipboard.writeText(debugData)}
-                                    >
-                                        Copy
-                                    </button>
-                                </div>
-                                <pre style={{ padding: '1rem', margin: 0, overflow: 'auto', maxHeight: '400px', fontSize: '0.75rem' }}>
-                                    {debugData}
-                                </pre>
-                            </div>
-                        )}
+
+
                     </div>
                 </div>
                 {currentMesh?.brokers?.map(broker => (
@@ -328,7 +302,7 @@ export default function Runtime() {
                             <th style={{ padding: '1rem' }}>Name</th>
                             <th style={{ padding: '1rem' }}>Domain</th>
                             <th style={{ padding: '1rem' }}>Latest Version</th>
-                            <th style={{ padding: '1rem' }}>Runtime Config</th>
+
                             <th style={{ padding: '1rem' }}>Actions</th>
                         </tr>
                     </thead>
@@ -342,17 +316,7 @@ export default function Runtime() {
                                 <td style={{ padding: '1rem' }}>
                                     {app.versions.length > 0 ? `v${app.versions[app.versions.length - 1].version}` : '-'}
                                 </td>
-                                <td style={{ padding: '1rem' }}>
-                                    {app.versions.length > 0 ? (
-                                        <button
-                                            className="btn btn-secondary"
-                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
-                                            onClick={() => openConfigModal(app, app.versions[app.versions.length - 1])}
-                                        >
-                                            <Settings size={14} />
-                                        </button>
-                                    ) : '-'}
-                                </td>
+
                                 <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
                                     <button
                                         className="btn btn-primary"
@@ -420,20 +384,7 @@ export default function Runtime() {
                 footer={<button className="btn btn-primary" onClick={handlePushConfig}>Push Configuration</button>}
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    {/* Client Settings */}
-                    <div>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Client Settings</h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Client Username</label>
-                                <input type="text" className="input" value={formData.clientUsername || ''} onChange={e => setFormData({ ...formData, clientUsername: e.target.value })} placeholder="e.g., my-app-user" />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Client Profile</label>
-                                <input type="text" className="input" value={formData.clientProfileName || ''} onChange={e => setFormData({ ...formData, clientProfileName: e.target.value })} placeholder="e.g., default" />
-                            </div>
-                        </div>
-                    </div>
+
 
                     {/* Guaranteed Messaging */}
                     <div>
