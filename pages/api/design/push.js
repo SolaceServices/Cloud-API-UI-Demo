@@ -10,6 +10,21 @@ function fileLog(message) {
     fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] ${message}\n`);
 }
 
+// Helper: Check if 'subset' object properties exist and match in 'superset'
+function isSubset(subset, superset) {
+    if (subset === null || subset === undefined) return true;
+    if (superset === null || superset === undefined) return false;
+
+    for (const key in subset) {
+        if (typeof subset[key] === 'object' && subset[key] !== null) {
+            if (!isSubset(subset[key], superset[key])) return false;
+        } else {
+            if (subset[key] !== superset[key]) return false;
+        }
+    }
+    return true;
+}
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
@@ -40,8 +55,12 @@ export default async function handler(req, res) {
         const logs = [];
         const log = (msg) => {
             console.log(msg);
-            logs.push({ timestamp: new Date().toISOString(), message: msg });
             fileLog(msg);
+            // User requested to "clean the logs and only show the errors"
+            // We include Warnings as they often indicate partial failures (like missing password)
+            if (msg.startsWith('Error') || msg.startsWith('Warning')) {
+                logs.push({ timestamp: new Date().toISOString(), message: msg });
+            }
         };
 
         log('Starting Push to Portal (Design Phase)...');
@@ -453,13 +472,11 @@ export default async function handler(req, res) {
                     version: version.version,
                     stateId: version.stateId || "1",
                     declaredConsumedEventVersionIds: consumedEventVersionIds,
+                    declaredConsumedEventVersionIds: consumedEventVersionIds,
                     declaredProducedEventVersionIds: producedEventVersionIds,
                     messagingSettings: {
                         brokerType: "solace",
-                        ...(brokerConfigs.length > 0 && brokerConfigs[0].clientUsername ? { clientUsername: brokerConfigs[0].clientUsername } : {}),
-                        ...(app.clientUsername ? { clientUsername: app.clientUsername } : {}), // Legacy fallback
-                        // clientPassword is now handled via dedicated configuration API
-                        ...(version.messagingSettings?.clientUsername ? { clientUsername: version.messagingSettings.clientUsername } : {}), // Keep version override if exists
+                        // Removed legacy clientUsername injection - handled via CONFIG_CLIENT_USERNAMES
                         ...(version.messagingSettings?.clientProfile ? {
                             clientProfile: {
                                 name: version.messagingSettings.clientProfile.name,
@@ -470,6 +487,12 @@ export default async function handler(req, res) {
                     }
                 };
 
+                // Remove messagingSettings if it only contains brokerType (default)
+                // This prevents "mismatch" against undefined remote settings
+                if (Object.keys(payload.messagingSettings).length === 1 && payload.messagingSettings.brokerType === 'solace') {
+                    delete payload.messagingSettings;
+                }
+
                 log(`Sending payload for ${app.name} v${version.version}: ${JSON.stringify(payload, null, 2)}`);
 
                 let versionId = version.solaceId;
@@ -477,18 +500,69 @@ export default async function handler(req, res) {
                 if (version.solaceId) {
                     // Update existing version
                     try {
-                        await solaceApiCall('PATCH', `${ENDPOINTS.APPLICATION_VERSIONS}/${version.solaceId}`, {
-                            stateId: payload.stateId,
-                            declaredConsumedEventVersionIds: payload.declaredConsumedEventVersionIds,
-                            declaredProducedEventVersionIds: payload.declaredProducedEventVersionIds,
-                            messagingSettings: payload.messagingSettings
-                        }, token);
-                        log(`Updated App Version: ${app.name} v${version.version}`);
+                        // 1. Check if update is actually needed (Idempotency) to avoid "Cannot edit object version" on Released versions
+                        let needsUpdate = true;
+                        try {
+                            const remoteRes = await solaceApiCall('GET', `${ENDPOINTS.APPLICATION_VERSIONS}/${version.solaceId}`, null, token);
+                            if (remoteRes.data) {
+                                const remote = remoteRes.data;
+                                const sortIds = (a, b) => (a || '').localeCompare(b || '');
+
+                                const remoteConsumed = (remote.declaredConsumedEventVersionIds || []).sort(sortIds);
+                                const localConsumed = (payload.declaredConsumedEventVersionIds || []).sort(sortIds);
+
+                                const remoteProduced = (remote.declaredProducedEventVersionIds || []).sort(sortIds);
+                                const localProduced = (payload.declaredProducedEventVersionIds || []).sort(sortIds);
+
+                                const isReleased = parseInt(remote.stateId) >= 2;
+
+                                // If Released, allow Local to be a SUBSET of Remote (ignore missing items which might be external shared events)
+                                // If Draft, require EXACT match
+                                const consumedMatch = isReleased
+                                    ? localConsumed.every(id => remoteConsumed.includes(id))
+                                    : JSON.stringify(remoteConsumed) === JSON.stringify(localConsumed);
+
+                                const producedMatch = isReleased
+                                    ? localProduced.every(id => remoteProduced.includes(id))
+                                    : JSON.stringify(remoteProduced) === JSON.stringify(localProduced);
+
+                                const stateMatch = remote.stateId === payload.stateId;
+                                const settingsMatch = isSubset(payload.messagingSettings, remote.messagingSettings);
+
+                                if (consumedMatch && producedMatch && stateMatch && settingsMatch) {
+                                    needsUpdate = false;
+                                    log(`App Version ${app.name} v${version.version} is up to date (State: ${remote.stateId}). Skipping update.`);
+                                } else {
+                                    // DEBUGGING: Log why it mismatched (will show in debug log only)
+                                    if (!consumedMatch) log(`[Idempotency Fail] Consumed mismatch. Local: ${JSON.stringify(localConsumed)} Remote: ${JSON.stringify(remoteConsumed)}`);
+                                    if (!producedMatch) log(`[Idempotency Fail] Produced mismatch. Local: ${JSON.stringify(localProduced)} Remote: ${JSON.stringify(remoteProduced)}`);
+                                    if (!stateMatch) log(`[Idempotency Fail] State mismatch. Local: ${payload.stateId} Remote: ${remote.stateId}`);
+                                    if (!settingsMatch) log(`[Idempotency Fail] Settings mismatch. Local: ${JSON.stringify(payload.messagingSettings)} Remote: ${JSON.stringify(remote.messagingSettings)}`);
+                                }
+                            }
+                        } catch (checkErr) {
+                            // If check fails, assume update needed
+                            // log(`Debug: Failed to check remote version state: ${checkErr.message}`);
+                        }
+
+                        if (needsUpdate) {
+                            await solaceApiCall('PATCH', `${ENDPOINTS.APPLICATION_VERSIONS}/${version.solaceId}`, {
+                                stateId: payload.stateId,
+                                declaredConsumedEventVersionIds: payload.declaredConsumedEventVersionIds,
+                                declaredProducedEventVersionIds: payload.declaredProducedEventVersionIds,
+                                messagingSettings: payload.messagingSettings
+                            }, token);
+                            log(`Updated App Version: ${app.name} v${version.version}`);
+                        }
                     } catch (e) {
                         if (e.message.includes('404')) {
                             log(`Warning: Stale App Version ID ${version.solaceId} for ${app.name} v${version.version}. Resetting...`);
                             version.solaceId = null;
                             // Fall through to create logic
+                        } else if (e.message.includes('400') && e.message.includes('Cannot edit object version')) {
+                            log(`Error: Cannot update ${app.name} v${version.version} because it is in a Read-Only state (e.g., Released) in Solace Cloud.`);
+                            log(`Action Required: Please increment the version number in the Designer to push new changes.`);
+                            errorCount++;
                         } else {
                             log(`Warning updating app version ${app.name} v${version.version}: ${e.message}`);
                             errorCount++;

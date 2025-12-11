@@ -243,7 +243,10 @@ export default async function handler(req, res) {
                                     brokerName: brokerName,
                                     brokerContextId: ctxId,
                                     clientUsername: configVal.clientUsername,
-                                    clientPassword: ""
+                                    clientPassword: "",
+                                    configId: uEntry.id, // Store Solace Config ID for reference
+                                    configType: "Client Username", // Explicit type
+                                    isOrphan: !ctxId // Tag as orphan if no Context ID matches
                                 });
                             }
                         }
@@ -322,7 +325,10 @@ export default async function handler(req, res) {
                                             permission: qVal.permission,
                                             respectTtlEnabled: qVal.respectTtlEnabled !== false,
                                             maxTtl: qVal.maxTtl,
-                                            queueName: qVal.queueName // Capture explicit queue name
+                                            maxTtl: qVal.maxTtl,
+                                            queueName: qVal.queueName, // Capture explicit queue name
+                                            configId: qEntry.id, // Store Solace Config ID (Queue Config)
+                                            isOrphan: !ctxId // Tag queue config as orphan if no Context ID matches
                                         };
 
                                         // Update/Set config using ID as key if available, fallback to Name (but user prefers ID)
@@ -341,7 +347,10 @@ export default async function handler(req, res) {
                                                 brokerContextId: ctxId,
                                                 clientUsername: "", // Unknown if not found yet
                                                 clientPassword: "",
-                                                accessType: "reference"
+                                                accessType: "reference",
+                                                configId: qEntry.id, // Store Solace Config ID (Queue)
+                                                configType: "Queue Configuration", // Explicit type
+                                                isOrphan: !ctxId // Tag as orphan
                                             });
                                         }
                                     }
