@@ -33,7 +33,7 @@ export default function Designer() {
     const [selectedItem, setSelectedItem] = useState(null); // For Master-Detail view
     const [statusMap, setStatusMap] = useState({}); // Map of ID -> Status
     const [brokers, setBrokers] = useState([]);
-    const [runtimeBrokers, setRuntimeBrokers] = useState([]); // Available deployment targets (brokers)
+
     const [activeView, setActiveView] = useState('design'); // 'design', 'configurations', 'promotions'
     const [activeBrokerConfig, setActiveBrokerConfig] = useState(0); // Index of selected broker config
     const [selectedVersionIndex, setSelectedVersionIndex] = useState(0); // Index of selected version for configuration
@@ -91,23 +91,10 @@ export default function Designer() {
                 fetchStatus();
                 fetchStatus();
                 fetchBrokers();
-                fetchRuntimeBrokers();
             });
     };
 
-    const fetchRuntimeBrokers = async () => {
-        const token = localStorage.getItem('solace_token');
-        if (!token) return;
-        try {
-            const res = await fetch('/api/runtime/brokers', { headers: { Authorization: `Bearer ${token}` } });
-            if (res.ok) {
-                const data = await res.json();
-                setRuntimeBrokers(data);
-            }
-        } catch (err) {
-            console.error('Failed to fetch runtime brokers:', err);
-        }
-    };
+
 
     const fetchBrokers = async () => {
         const token = localStorage.getItem('solace_token');
@@ -275,41 +262,7 @@ export default function Designer() {
         }
     };
 
-    const handlePromote = async (brokerId, v) => {
-        const token = localStorage.getItem('solace_token');
-        if (!token) return alert('No token found');
 
-        // Check if v is valid
-        if (!v || !v.solaceId) return alert('This version has not been pushed to Solace Cloud yet. Please "Push to Portal" first.');
-
-        setDeploying(true);
-        setLogs(prev => [...prev, { timestamp: new Date().toISOString(), message: `Starting Promotion of v${v.version} to Broker...` }]);
-
-        try {
-            const res = await fetch('/api/deploy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    token,
-                    eventBrokerId: brokerId,
-                    applicationVersionId: v.solaceId
-                })
-            });
-
-            const data = await res.json();
-            if (data.logs) setLogs(prev => [...prev, ...data.logs]);
-
-            if (data.success) {
-                setLogs(prev => [...prev, { timestamp: new Date().toISOString(), message: 'Promotion Successful! 🚀' }]);
-            } else {
-                setLogs(prev => [...prev, { timestamp: new Date().toISOString(), message: `Promotion Failed: ${data.error}` }]);
-            }
-        } catch (err) {
-            setLogs(prev => [...prev, { timestamp: new Date().toISOString(), message: `ERROR: ${err.message}` }]);
-        } finally {
-            setDeploying(false);
-        }
-    };
 
     const openModal = (type, data = {}) => {
         setFormData({ version: '1.0.0', stateId: "1", content: "", ...data });
@@ -760,101 +713,8 @@ export default function Designer() {
                                 >
                                     Configurations
                                 </button>
-                                <button
-                                    onClick={() => setActiveView('promotions')}
-                                    style={{
-                                        padding: '0.5rem 1rem',
-                                        background: 'none',
-                                        border: 'none',
-                                        borderBottom: activeView === 'promotions' ? '2px solid var(--primary)' : '2px solid transparent',
-                                        color: activeView === 'promotions' ? 'var(--primary)' : 'var(--muted-foreground)',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Promotions
-                                </button>
                             </div>
                         )}
-
-                        {activeView === 'promotions' && activeTab === 'apps' ? (
-                            <div style={{ padding: '0 1rem' }}>
-                                <div style={{ marginBottom: '2rem' }}>
-                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>Promote to Event Brokers</h3>
-
-                                    {/* Version Selector for Promotion */}
-                                    <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)' }}>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Select Version to Promote</label>
-                                        <select
-                                            className="input"
-                                            style={{ width: '100%', fontSize: '1rem', padding: '0.5rem' }}
-                                            value={selectedVersionIndex}
-                                            onChange={e => setSelectedVersionIndex(parseInt(e.target.value))}
-                                        >
-                                            {selectedItem.versions.map((v, i) => (
-                                                <option key={v.id} value={i}>v{v.version} ({STATES[v.stateId].label}) {v.solaceId ? '✅ Pushed' : '⚠️ Not Pushed'}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Runtime Broker List */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                        {/* DEBUG LOGS */}
-                                        {console.log('Design Brokers:', brokers)}
-                                        {console.log('Runtime Brokers:', runtimeBrokers)}
-                                        {console.log('Configured:', selectedItem.brokerConfigs)}
-
-                                        {runtimeBrokers.filter(g => {
-                                            // 1. Get names of configured brokers for this app
-                                            const configuredBrokerNames = selectedItem.brokerConfigs?.map(bc => bc.brokerName) || [];
-                                            // 2. Find the matching Modeled Brokers object to get configured Service IDs
-                                            const relevantBrokers = brokers.filter(b => configuredBrokerNames.includes(b.name));
-                                            const allowedServiceIds = relevantBrokers.map(b => b.serviceId);
-                                            // 3. Check if this Broker's ID matches one of those Service IDs
-                                            return allowedServiceIds.includes(g.id);
-                                        }).length === 0 ? (
-                                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)', border: '1px dashed var(--border)', borderRadius: 'var(--radius)' }}>
-                                                No compatible Event Brokers found for promotion.
-                                                <br />
-                                                <span style={{ fontSize: '0.85rem' }}>
-                                                    Make sure your configured broker belongs to a Mesh with an active Runtime Broker.
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            runtimeBrokers.filter(g => {
-                                                const configuredBrokerNames = selectedItem.brokerConfigs?.map(bc => bc.brokerName) || [];
-                                                const relevantBrokers = brokers.filter(b => configuredBrokerNames.includes(b.name));
-                                                const allowedServiceIds = relevantBrokers.map(b => b.serviceId);
-                                                return allowedServiceIds.includes(g.id);
-                                            }).map(broker => (
-                                                <div key={broker.id} style={{ padding: '1.5rem', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                            <div style={{ padding: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '50%', color: '#3b82f6' }}>
-                                                                <Server size={24} />
-                                                            </div>
-                                                            <div>
-                                                                <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{broker.name}</h4>
-                                                                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Event Broker ID: {broker.id}</div>
-                                                                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Service ID: {broker.eventBrokerServiceId || 'N/A'}</div>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            className="btn btn-primary"
-                                                            onClick={() => handlePromote(broker.id, selectedItem.versions[selectedVersionIndex])}
-                                                            disabled={deploying || !selectedItem.versions[selectedVersionIndex]?.solaceId}
-                                                            title={!selectedItem.versions[selectedVersionIndex]?.solaceId ? "Push to Portal first" : "Deploy this version"}
-                                                        >
-                                                            <UploadCloud size={16} style={{ marginRight: '0.5rem' }} />
-                                                            Promote Version
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : null}
 
                         {activeView === 'configurations' && activeTab === 'apps' ? (
                             <div style={{ padding: '0 1rem' }}>
