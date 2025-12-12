@@ -263,7 +263,7 @@ FUNCTION Push(token, domainId, pendingDeletions):
     RETURN Success
 ```
 
-## 5. Configuration Management
+## 4. Configuration Management
 **Source**: `ui/pages/api/config.js`
 
 -   **Read**: Reads `solace-config.json`. Defaults to an empty structure if the file is missing or invalid.
