@@ -42,3 +42,4 @@ next-env.d.ts
 # local logs
 *.log
 debug_log.txt
+solace-config.json

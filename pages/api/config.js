@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 export default function handler(req, res) {
-  const configPath = path.join(process.cwd(), '..', 'solace-config.json');
+  const configPath = path.join(process.cwd(), 'solace-config.json');
 
   if (req.method === 'GET') {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

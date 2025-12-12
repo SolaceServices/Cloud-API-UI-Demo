@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     }
 
     const { token, orgId, confirmDeletions } = req.body;
-    const configPath = path.join(process.cwd(), '..', 'solace-config.json');
+    const configPath = path.join(process.cwd(), 'solace-config.json');
 
     try {
         let config;

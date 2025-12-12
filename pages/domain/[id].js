@@ -139,24 +139,7 @@ export default function Designer() {
         });
     };
 
-    const handleCheckSync = async () => {
-        setCheckingSync(true);
-        try {
-            const token = localStorage.getItem('solace_token');
-            const res = await fetch('/api/design/sync_check', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
-            setSyncReport(data);
-            setActiveModal('detailedSyncReport');
-        } catch (err) {
-            console.error(err);
-            alert('Failed to check sync status');
-        } finally {
-            setCheckingSync(false);
-        }
-    };
+
 
     const handlePush = async () => {
         const token = localStorage.getItem('solace_token');
@@ -253,7 +236,15 @@ export default function Designer() {
                 body: JSON.stringify({ token, orgId })
             });
             const data = await res.json();
-            setSyncReport(data);
+
+            // Filter report to only show items related to this domain
+            const filteredReport = {
+                domains: data.domains.filter(d => d.id === domainId),
+                schemas: data.schemas.filter(s => s.name.includes(currentDomainName) || config.schemas.some(cs => cs.name === s.name)), // Best effort match
+                events: data.events.filter(e => config.events.some(ce => ce.name === e.name)),
+                apps: data.apps.filter(a => config.applications.some(ca => ca.name === a.name))
+            };
+            setSyncReport(filteredReport);
         } catch (err) {
             alert('Sync failed: ' + err.message);
             setActiveModal(null);
@@ -561,10 +552,7 @@ export default function Designer() {
                         <RefreshCw size={20} style={{ marginRight: '0.5rem', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
                         Sync
                     </button>
-                    <button className="btn btn-secondary" onClick={handleCheckSync} disabled={checkingSync} title="Check for discrepancies between local design and Solace Cloud.">
-                        <Activity size={20} style={{ marginRight: '0.5rem', animation: checkingSync ? 'pulse 1s infinite' : 'none' }} />
-                        {checkingSync ? 'Checking...' : 'Check Sync'}
-                    </button>
+
                     <button className="btn btn-primary" onClick={handlePush} disabled={deploying} title="Step 1: Push design to Solace Cloud. Step 2: Deploy to broker in Runtime Manager.">
                         <Play size={20} style={{ marginRight: '0.5rem' }} />
                         {deploying ? 'Pushing...' : 'Push to Portal'}
@@ -1528,9 +1516,19 @@ export default function Designer() {
                                         {items.length === 0 ? <p style={{ color: '#666' }}>No items</p> : (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                 {items.map(item => (
-                                                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
-                                                        <span>{item.name}</span>
-                                                        {renderSyncStatus(item.status)}
+                                                    <div key={item.id} style={{ display: 'flex', flexDirection: 'column', fontSize: '0.875rem' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <span style={{ fontWeight: 500 }}>{item.name}</span>
+                                                            {renderSyncStatus(item.status)}
+                                                        </div>
+                                                        {/* Render Deep Sync Issues if present */}
+                                                        {item.details && item.details.length > 0 && (
+                                                            <div style={{ marginTop: '0.25rem', padding: '0.5rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px', fontSize: '0.8rem', color: '#ef4444' }}>
+                                                                {item.details.map((issue, idx) => (
+                                                                    <div key={idx} style={{ display: 'flex', gap: '0.5rem' }}>• {issue}</div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>

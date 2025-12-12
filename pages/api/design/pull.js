@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
     const token = req.headers.authorization?.split(' ')[1] || req.body.token;
     const { domainId } = req.body;
-    const configPath = path.join(process.cwd(), '..', 'solace-config.json');
+    const configPath = path.join(process.cwd(), 'solace-config.json');
 
     try {
         let config;
@@ -224,6 +224,9 @@ export default async function handler(req, res) {
 
 
                         const ctxId = uEntry.contextId;
+                        // RESOLVE BROKER:
+                        // 1. Try to match Context ID to a local Modeled Broker Name (active).
+                        // 2. If no match (orphan), use "Imported Broker" as a fallback container.
                         const brokerName = contextMap[ctxId] || ctxId || "Imported Broker";
 
                         if (configVal && configVal.clientUsername) {
@@ -316,6 +319,9 @@ export default async function handler(req, res) {
 
 
                                     const ctxId = qEntry.contextId;
+                                    // RESOLVE BROKER (QUEUE):
+                                    // 1. Try to match Context ID to a local Modeled Broker Name.
+                                    // 2. Fallback to "Imported Broker" to preserve data visibility (Orphan).
                                     const brokerName = contextMap[ctxId] || ctxId || "Imported Broker";
 
                                     if (qVal) {
